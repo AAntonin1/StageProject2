@@ -36,4 +36,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(Expense_report::class);
     }
+
+    public function segment()
+    {
+        return $this->hasMany(Segment::class);
+    }
 }

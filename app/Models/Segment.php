@@ -26,4 +26,9 @@ class Segment extends Model
     {
         return $this->belong(Expense_report::class);
     }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }
