@@ -1,19 +1,19 @@
 <script setup>
 import {ref, computed, watch, onMounted, defineAsyncComponent, provide} from 'vue';
 import {useForm} from '@inertiajs/vue3';
-const AddressAutocomplete = defineAsyncComponent(() => import('@/components/trajets/AddressAutocomplete.vue'));
-const Recap = defineAsyncComponent(() => import('@/components/trajets/Recap.vue'));
-const Menu = defineAsyncComponent(() => import('@/components/trajets/Menu.vue'));
-import ButtonAddStep from "@/components/trajets/ButtonAddStep.vue";
-import ButtonToggleReturnTrip from "@/components/trajets/ButtonToggleReturnTrip.vue";
-import Header from "@/components/trajets/Header.vue";
-import PersonalInformation from "@/components/trajets/PersonalInformation.vue";
-import HomeWorkDistance from "@/components/trajets/HomeWorkDistance.vue";
-import ButtonSwapAddress from "@/components/trajets/ButtonSwapAddress.vue";
-import ButtonHomeAddress from "@/components/trajets/ButtonHomeAddress.vue";
-import ButtonWorkAddress from "@/components/trajets/ButtonWorkAddress.vue";
-import SelectTypeDoc from "@/components/trajets/SelectTypeDoc.vue";
-import ReasonDeplacement from "@/components/trajets/ReasonDeplacement.vue";
+const AddressAutocomplete = defineAsyncComponent(() => import('@/components/ExpenseReports/AddressAutocomplete.vue'));
+const Recap = defineAsyncComponent(() => import('@/components/ExpenseReports/Recap.vue'));
+const Menu = defineAsyncComponent(() => import('@/components/ExpenseReports/Menu.vue'));
+import ButtonAddStep from "@/components/ExpenseReports/ButtonAddStep.vue";
+import ButtonToggleReturnTrip from "@/components/ExpenseReports/ButtonToggleReturnTrip.vue";
+import Header from "@/components/ExpenseReports/Header.vue";
+import PersonalInformation from "@/components/ExpenseReports/PersonalInformation.vue";
+import HomeWorkDistance from "@/components/ExpenseReports/HomeWorkDistance.vue";
+import ButtonSwapAddress from "@/components/ExpenseReports/ButtonSwapAddress.vue";
+import ButtonHomeAddress from "@/components/ExpenseReports/ButtonHomeAddress.vue";
+import ButtonWorkAddress from "@/components/ExpenseReports/ButtonWorkAddress.vue";
+import SelectTypeDoc from "@/components/ExpenseReports/SelectTypeDoc.vue";
+import ReasonDeplacement from "@/components/ExpenseReports/ReasonDeplacement.vue";
 
 // Fetch the home address from localStorage or initialize it to an empty object if not set
 const savedHomeAddress = localStorage.getItem('home_address') ? JSON.parse(localStorage.getItem('home_address')) : {};

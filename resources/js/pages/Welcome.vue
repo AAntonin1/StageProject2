@@ -1,5 +1,5 @@
 <script setup>
-import Main from '@/pages/trajets/Main.vue'
+import Main from '@/pages/ExpenseReports/Main.vue'
 
 </script>
 <template>

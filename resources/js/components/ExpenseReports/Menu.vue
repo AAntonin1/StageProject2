@@ -1,6 +1,6 @@
 <script setup>
 import { ref, inject, defineAsyncComponent, watch } from 'vue';
-const AddressAutocomplete = defineAsyncComponent(() => import('@/components/trajets/AddressAutocomplete.vue'));
+const AddressAutocomplete = defineAsyncComponent(() => import('@/components/ExpenseReports/AddressAutocomplete.vue'));
 
 const isOpen = ref(false);
 const km_rate = defineModel('km_rate');
