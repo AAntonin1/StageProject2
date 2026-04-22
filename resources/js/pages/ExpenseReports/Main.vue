@@ -1,6 +1,8 @@
 <script setup>
-import {ref, computed, watch, onMounted, defineAsyncComponent, provide} from 'vue';
 import {useForm} from '@inertiajs/vue3';
+import {ref, computed, watch, onMounted, defineAsyncComponent, provide} from 'vue';
+import { route } from 'ziggy-js';
+
 const AddressAutocomplete = defineAsyncComponent(() => import('@/components/ExpenseReports/AddressAutocomplete.vue'));
 const Recap = defineAsyncComponent(() => import('@/components/ExpenseReports/Recap.vue'));
 const Menu = defineAsyncComponent(() => import('@/components/ExpenseReports/Menu.vue'));
@@ -266,7 +268,15 @@ const calcBtwToAddress = (index) => {
 };
 
 const submit = () => {
-    console.log('Submission:', {...form.data(), total_km: totalDistance.value});
+    form.post(route('expenseReport.store'), {
+        forceFormData: true,
+        onSuccess: () => {
+            form.reset();
+        },
+        onError: (errors) => {
+            console.error("Erreur lors de l'envoi :", errors);
+        },
+    });
 };
 
 // Save homeWorkDistance in localStorage whenever it changes
@@ -440,7 +450,8 @@ watch(addressWorkRef, (newVal) => {
                        :totalDistance="totalDistance"
                        :form="form"/>
 
-                <button type="submit" :disabled="form.processing"
+                <button :disabled="form.processing"
+                        @click="submit"
                         class="w-full bg-slate-900 text-white py-5 rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-slate-300 hover:bg-black transition-all active:scale-[0.98] disabled:opacity-50">
                     <span v-if="!form.processing" class="text-lg">Enregistrer la mission</span>
                     <span v-else class="text-lg">Traitement...</span>
