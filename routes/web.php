@@ -13,6 +13,7 @@ Route::middleware(['auth'])->group(function () {
 //Login
 Route::get('/', [UserController::class, 'login'])->name('login');
 Route::post('/checkUser', [UserController::class, 'checkLogin'])->name('user.login');
+Route::post('/logout', [UserController::class, 'logout'])->name('user.logout');
 
 
 require __DIR__.'/settings.php';

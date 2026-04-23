@@ -14,6 +14,7 @@ class Expense_report extends Model
         'total_amount',
         'date',
         'status',
+        'user_id',
     ];
 
     public function user()

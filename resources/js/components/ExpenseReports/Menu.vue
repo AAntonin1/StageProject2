@@ -1,5 +1,7 @@
 <script setup>
 import { ref, inject, defineAsyncComponent, watch } from 'vue';
+import { route } from 'ziggy-js';
+import { router } from '@inertiajs/vue3';
 const AddressAutocomplete = defineAsyncComponent(() => import('@/components/ExpenseReports/AddressAutocomplete.vue'));
 
 const isOpen = ref(false);
@@ -7,6 +9,10 @@ const km_rate = defineModel('km_rate');
 
 const { addressHomeRef } = inject('dataHomeAddress');
 const { addressWorkRef } = inject('dataWorkAddress');
+
+const logout = () => {
+    router.post(route('user.logout'));
+};
 
 
 </script>
@@ -113,6 +119,12 @@ const { addressWorkRef } = inject('dataWorkAddress');
           Appliquer
         </button>
       </div>
+
+        <button @click="logout"
+                class="mt-12 w-full max-w-sm py-4 bg-white/5 border border-white/10 text-red-400 text-sm font-semibold hover:bg-red-500/10 transition-colors">
+            Se déconnecter
+        </button>
+
     </aside>
   </transition>
 </template>

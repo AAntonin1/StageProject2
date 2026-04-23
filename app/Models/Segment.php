@@ -17,6 +17,7 @@ class Segment extends Model
         'time_btw',
         'type_doc',
         'expense_report_id',
+        'user_id',
 
     ];
 

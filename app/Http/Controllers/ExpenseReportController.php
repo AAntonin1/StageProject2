@@ -33,6 +33,7 @@ class ExpenseReportController extends Controller
         $segments = $request->input('segments');
         foreach ($segments as $segment) {
             Segment::create([
+                'user_id' => auth()->id(),
                 'date' => $request->input('date'), // TODO: Add date for ech segment if needed
                 'from_address' => $segment['from_address']['label'],
                 'to_address' => $segment['to_address']['label'],
@@ -46,7 +47,7 @@ class ExpenseReportController extends Controller
             ]);
         }
 
-        return redirect()->route('home')->with('success', 'Expense report created successfully!');
+        return redirect()->route('expenseReport.form')->with('success', 'Expense report created successfully!');
 
     }
 }
