@@ -1,34 +1,18 @@
+import { createApp, h } from 'vue';
 import { createInertiaApp } from '@inertiajs/vue3';
-import { initializeTheme } from '@/composables/useAppearance';
-import AppLayout from '@/layouts/AppLayout.vue';
-import AuthLayout from '@/layouts/AuthLayout.vue';
-import SettingsLayout from '@/layouts/settings/Layout.vue';
-import { initializeFlashToast } from '@/lib/flashToast';
-
-
-const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 
 createInertiaApp({
-    title: (title) => (title ? `${title} - ${appName}` : appName),
-    layout: (name) => {
-        switch (true) {
-            case name === 'Welcome' || name === 'ExpenseReports/Main':
-                return null;
-            case name.startsWith('auth/'):
-                return AuthLayout;
-            case name.startsWith('settings/'):
-                return [AppLayout, SettingsLayout];
-            default:
-                return AppLayout;
+    resolve: (name) => resolvePageComponent(`./Pages/${name}.vue`, import.meta.glob('./Pages/**/*.vue')),
+    setup({ el, App, props, plugin }) {
+        const app = createApp({ render: () => h(App, props) });
+
+        app.use(plugin);
+
+        if (el) {
+            app.mount(el);
         }
-    },
-    progress: {
-        color: '#4B5563',
+
+        return app;
     },
 });
-
-// This will set light / dark mode on page load...
-initializeTheme();
-
-// This will listen for flash toast data from the server...
-initializeFlashToast();

@@ -8,6 +8,7 @@ const km_rate = defineModel('km_rate');
 const { addressHomeRef } = inject('dataHomeAddress');
 const { addressWorkRef } = inject('dataWorkAddress');
 
+
 </script>
 
 <template>
@@ -48,7 +49,7 @@ const { addressWorkRef } = inject('dataWorkAddress');
 
       <!-- Rate km -->
       <div class="flex-1 overflow-y-auto p-6 space-y-8">
-        <section class="space-y-4">
+        <section v-if="$page.props.auth.user.roles.includes('admin')" class="space-y-4">
           <div class="flex items-center justify-between">
             <label class="text-[10px] font-black uppercase text-slate-400">Tarif Kilométrique</label>
             <span class="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">€ / KM</span>

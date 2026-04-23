@@ -17,6 +17,18 @@ class ExpenseReportController extends Controller
 
     public function store(Request $request)
     {
+        $request->validate([
+            'date' => 'required|date',
+            'segments' => 'required|array',
+            'segments.*.from_address.label' => 'required|string',
+            'segments.*.to_address.label' => 'required|string',
+            'segments.*.departure_time' => 'required|date_format:H:i',
+            'segments.*.arrival_time' => 'required|date_format:H:i',
+            'segments.*.reason' => 'required|string',
+            'segments.*.distance' => 'required|numeric',
+            'segments.*.timeBtw' => 'required|numeric',
+            'segments.*.typeDoc' => 'required|string',
+        ]);
 
         $segments = $request->input('segments');
         foreach ($segments as $segment) {
@@ -30,7 +42,7 @@ class ExpenseReportController extends Controller
                 'distance_km' => $segment['distance'],
                 'time_btw' => $segment['timeBtw'],
                 'type_doc' => $segment['typeDoc'],
-                'expense_report_id' => 1, //TODO: replace with actual expense report ID after creating the expense report
+                'expense_report_id' => 1, // TODO: replace with actual expense report ID after creating the expense report
             ]);
         }
 

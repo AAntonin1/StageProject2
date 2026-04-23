@@ -18,11 +18,19 @@ import SelectTypeDoc from "@/components/ExpenseReports/SelectTypeDoc.vue";
 import ReasonDeplacement from "@/components/ExpenseReports/ReasonDeplacement.vue";
 
 // Fetch the home address from localStorage or initialize it to an empty object if not set
-const savedHomeAddress = localStorage.getItem('home_address') ? JSON.parse(localStorage.getItem('home_address')) : {};
+const savedHomeAddress = {
+    lat: 10,
+    lon: 10,
+    label: '42 rue de la paix, Paris'
+};
 const addressHomeRef = ref(savedHomeAddress);
 
 // Fetch the work address from localStorage or initialize it to an empty object if not set
-const savedWorkAddress = localStorage.getItem('work_address') ? JSON.parse(localStorage.getItem('work_address')) : {};
+const savedWorkAddress = {
+    lat: 10,
+    lon: 10,
+    label: '42 rue de la paix, Paris'
+};
 const addressWorkRef = ref(savedWorkAddress);
 
 const updateAddressHome = (newAddress) => {
