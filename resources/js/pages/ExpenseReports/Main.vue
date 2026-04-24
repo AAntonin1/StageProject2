@@ -95,7 +95,7 @@ onMounted(() => {
 
         const savedDist = localStorage.getItem('home_work_dist');
 
-        if (savedDist) {
+         if (savedDist) {
             homeWorkDistance.value = parseFloat(savedDist);
             form.homeWorkDistance = parseFloat(savedDist);
         }
