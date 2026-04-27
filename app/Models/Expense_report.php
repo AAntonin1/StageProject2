@@ -15,7 +15,12 @@ class Expense_report extends Model
         'date',
         'status',
         'user_id',
+        'address_work',
+        'job',
+        'vehicle',
     ];
+
+    protected $table = 'expense_report';
 
     public function user()
     {

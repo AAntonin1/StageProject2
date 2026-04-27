@@ -10,14 +10,17 @@ const isOpen = ref(false);
 const km_rate = defineModel('km_rate');
 const firstName = defineModel('first_name');
 const lastName = defineModel('last_name');
-const address = defineModel('address');
+const job = defineModel('job');
+const vehicle = defineModel('vehicle');
+const numberPlate = defineModel('number_plate');
+const placeBusiness = defineModel('place_business');
+
 
 const { addressHomeRef } = inject('dataHomeAddress');
 const { addressWorkRef } = inject('dataWorkAddress');
 
 const logout = () => {
     router.post(route('user.logout'));
-    //Delete all local data
     localStorage.clear();
 };
 </script>
@@ -38,40 +41,76 @@ const logout = () => {
     <transition enter-active-class="transition-transform duration-300 ease-out" leave-active-class="transition-transform duration-200 ease-in" enter-from-class="translate-x-full" leave-to-class="translate-x-full">
         <aside v-if="isOpen" class="fixed top-0 right-0 h-full w-full sm:w-[480px] bg-white shadow-2xl z-50 flex flex-col">
             <div class="p-6 border-b border-slate-50 flex justify-between items-center">
-                <h2 class="text-sm font-black uppercase tracking-tighter text-slate-900">Paramètres</h2>
+                <h2 class="text-sm font-black uppercase tracking-tighter text-slate-900">Paramètres du profil</h2>
                 <button @click="isOpen = false" class="p-2 hover:bg-slate-100 rounded-full transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
             </div>
 
             <div class="flex-1 overflow-y-auto p-6 space-y-8">
+
                 <section class="space-y-4">
-                    <label class="text-[10px] font-black uppercase text-slate-400">Profil</label>
+                    <label class="text-[10px] font-black uppercase text-slate-400">Identité</label>
                     <div class="grid grid-cols-2 gap-3">
-                        <input type="text" v-model="firstName" placeholder="Prénom" class="w-full bg-slate-50 border-none rounded-xl p-3 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-slate-900" />
-                        <input type="text" v-model="lastName" placeholder="Nom" class="w-full bg-slate-50 border-none rounded-xl p-3 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-slate-900" />
+                        <div class="space-y-1">
+                            <span class="text-[9px] text-slate-400 ml-1 uppercase font-bold">Prénom</span>
+                            <input type="text" v-model="firstName" placeholder="Prénom" class="w-full bg-slate-50 border-none rounded-xl p-3 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-slate-900" />
+                        </div>
+                        <div class="space-y-1">
+                            <span class="text-[9px] text-slate-400 ml-1 uppercase font-bold">Nom</span>
+                            <input type="text" v-model="lastName" placeholder="Nom" class="w-full bg-slate-50 border-none rounded-xl p-3 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-slate-900" />
+                        </div>
                     </div>
                 </section>
 
-                <section v-if="$page.props.auth.user.roles.includes('admin')" class="space-y-4">
-                    <label class="text-[10px] font-black uppercase text-slate-400">Tarif Kilométrique (€)</label>
-                    <input type="number" step="0.001" class="w-full bg-slate-50 border-2 border-transparent focus:border-slate-900 rounded-2xl py-4 px-5 font-black text-xl text-slate-900" v-model="km_rate" />
+                <section class="space-y-4">
+                    <label class="text-[10px] font-black uppercase text-slate-400">Localisations</label>
+                    <div class="space-y-3">
+                        <div class="space-y-1">
+                            <span class="text-[9px] text-slate-400 ml-1 uppercase font-bold">Domicile</span>
+                            <AddressAutocomplete v-model:address="addressHomeRef" placeholder="Adresse privée" />
+                        </div>
+                        <div class="space-y-1">
+                            <span class="text-[9px] text-slate-400 ml-1 uppercase font-bold">Lieu de travail principal</span>
+                            <AddressAutocomplete v-model:address="addressWorkRef" placeholder="Adresse du bureau" />
+                        </div>
+                    </div>
                 </section>
 
                 <section class="space-y-4">
-                    <label class="text-[10px] font-black uppercase text-slate-400">Adresse Maison</label>
-                    <AddressAutocomplete v-model:address="addressHomeRef" placeholder="Votre adresse" />
+                    <label class="text-[10px] font-black uppercase text-slate-400">Professionnel & Véhicule</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="space-y-1">
+                            <span class="text-[9px] text-slate-400 ml-1 uppercase font-bold">Métier</span>
+                            <input type="text" v-model="job" placeholder="Ex: Développeur" class="w-full bg-slate-50 border-none rounded-xl p-3 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-slate-900" />
+                        </div>
+                        <div class="space-y-1">
+                            <span class="text-[9px] text-slate-400 ml-1 uppercase font-bold">Ville d'affectation</span>
+                            <input type="text" v-model="placeBusiness" placeholder="Ex: Libramont" class="w-full bg-slate-50 border-none rounded-xl p-3 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-slate-900" />
+                        </div>
+                        <div class="space-y-1">
+                            <span class="text-[9px] text-slate-400 ml-1 uppercase font-bold">Modèle Véhicule</span>
+                            <input type="text" v-model="vehicle" placeholder="Ex: Tesla Model 3" class="w-full bg-slate-50 border-none rounded-xl p-3 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-slate-900" />
+                        </div>
+                        <div class="space-y-1">
+                            <span class="text-[9px] text-slate-400 ml-1 uppercase font-bold">Plaque</span>
+                            <input type="text" v-model="numberPlate" placeholder="Ex: 1-ABC-123" class="w-full bg-slate-50 border-none rounded-xl p-3 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-slate-900" />
+                        </div>
+                    </div>
                 </section>
 
-                <section class="space-y-4">
-                    <label class="text-[10px] font-black uppercase text-slate-400">Adresse Travail</label>
-                    <AddressAutocomplete v-model:address="addressWorkRef" placeholder="Votre adresse travail" />
+                <section v-if="$page.props.auth.user.roles.includes('admin')" class="space-y-4 pt-4 border-t border-slate-50">
+                    <label class="text-[10px] font-black uppercase text-slate-400">Configuration Admin (Tarif km)</label>
+                    <div class="relative">
+                        <input type="number" step="0.001" class="w-full bg-slate-900 border-none rounded-2xl py-4 px-5 font-black text-xl text-white focus:ring-0" v-model="km_rate" />
+                        <span class="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 font-bold">€ / KM</span>
+                    </div>
                 </section>
             </div>
 
             <div class="p-6 bg-slate-50 space-y-3">
-                <button @click="isOpen = false" class="w-full bg-slate-900 text-white py-4 rounded-xl font-black uppercase text-xs">Appliquer</button>
-                <button @click="logout" class="w-full py-4 bg-white border border-slate-200 text-red-500 rounded-xl text-xs font-black uppercase">Déconnexion</button>
+                <button @click="isOpen = false" class="w-full bg-slate-900 text-white py-4 rounded-xl font-black uppercase text-xs hover:bg-slate-800 transition-colors">Enregistrer les modifications</button>
+                <button @click="logout" class="w-full py-4 bg-white border border-slate-200 text-red-500 rounded-xl text-xs font-black uppercase hover:bg-red-50 transition-colors">Déconnexion</button>
             </div>
         </aside>
     </transition>

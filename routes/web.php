@@ -15,5 +15,8 @@ Route::get('/', [UserController::class, 'login'])->name('login');
 Route::post('/checkUser', [UserController::class, 'checkLogin'])->name('user.login');
 Route::post('/logout', [UserController::class, 'logout'])->name('user.logout');
 
+// Uniquement pour le développement
+Route::get('/test-export', [App\Http\Controllers\ExpenseReportController::class, 'export']);
+
 
 require __DIR__.'/settings.php';

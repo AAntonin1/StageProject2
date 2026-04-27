@@ -3,7 +3,8 @@ import { computed } from 'vue';
 import AddressAutocomplete from '@/components/ExpenseReports/AddressAutocomplete.vue';
 
 const props = defineProps({
-    user: Object
+    user: Object,
+    expense_report : Object
 });
 
 const firstName = defineModel('first_name');
@@ -14,9 +15,29 @@ const job = defineModel('job');
 const vehicle = defineModel('vehicle');
 const numberPlate = defineModel('number_plate');
 
-//Check if any of the required fields are missing (first name, last name, or address)
+//Check if any of the required fields are missing
 const isMissingData = computed(() => {
-    return !props.user.first_name || !props.user.last_name || !props.user.address_home;
+    const userFields = [
+        props.user.first_name,
+        props.user.last_name,
+        props.user.address_home,
+        props.user.place_business,
+        props.user.job,
+        props.user.vehicle,
+        props.user.number_plate
+    ];
+
+    const modelFields = [
+        firstName.value,
+        lastName.value,
+        address.value?.label,
+        placeBusiness.value,
+        job.value,
+        vehicle.value,
+        numberPlate.value
+    ];
+
+    return userFields.some((val, index) => !val && !modelFields[index]);
 });
 </script>
 
@@ -42,7 +63,7 @@ const isMissingData = computed(() => {
         </div>
     </div>
 
-    <div class="bg-white rounded-3xl p-6 mb-6 border border-slate-200 shadow-xl shadow-slate-200/50">
+    <div v-if="isMissingData" class="bg-white rounded-3xl p-6 mb-6 border border-slate-200 shadow-xl shadow-slate-200/50">
         <h2 class="text-xs font-black uppercase text-slate-900 mb-3">Informations relatives au travail</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>

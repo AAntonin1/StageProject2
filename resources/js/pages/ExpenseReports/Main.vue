@@ -20,6 +20,7 @@ import ReasonDeplacement from "@/components/ExpenseReports/ReasonDeplacement.vue
 const props = defineProps({
     user : Object,
     segments : Array,
+    expense_report : Object
 });
 
 // Fetch the home address from localStorage or initialize it to an empty object if not set
@@ -129,15 +130,16 @@ onMounted(() => {
             Object.assign(form, JSON.parse(savedForm));
         }
 
-        if (!form.firstName && props.user.first_name) {
-            form.firstName = props.user.first_name;
-        }
-        if (!form.lastName && props.user.last_name) {
-            form.lastName = props.user.last_name;
-        }
+        if (!form.firstName) form.firstName = props.user.first_name || '';
+        if (!form.lastName) form.lastName = props.user.last_name || '';
+        if (!form.job) form.job = props.expense_report.job || '';
+        if (!form.vehicle) form.vehicle = props.expense_report.vehicle || '';
+        if (!form.numberPlate) form.numberPlate = props.expense_report.number_plate || '';
+        if (!form.placeBusiness) form.placeBusiness = props.expense_report.address_work || '';
 
-        if(!form.addressHome.label && props.user.address) {
-            form.addressHome.label = props.user.address;
+        // Sécurité pour l'adresse domicile si non définie dans form.addressHome
+        if (!form.addressHome.label && props.user.address_home) {
+            form.addressHome.label = props.user.address_home;
         }
     }
 });
@@ -405,6 +407,7 @@ watch(addressWorkRef, (newVal) => {
                 v-model:vehicle="form.vehicle"
                 v-model:number_plate="form.numberPlate"
                 :user="props.user"
+                :expense_report="props.expense_report"
             />
 
             <!-- Home-work distance input -->
@@ -542,7 +545,10 @@ watch(addressWorkRef, (newVal) => {
         v-model:km_rate="form.km_rate"
         v-model:first_name="form.firstName"
         v-model:last_name="form.lastName"
-        v-model:address="form.addressHome"
+        v-model:job="form.job"
+        v-model:vehicle="form.vehicle"
+        v-model:number_plate="form.numberPlate"
+        v-model:place_business="form.addressWork"
         :user="props.user"
     />
     <p>{{form}}</p>
