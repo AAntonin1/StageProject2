@@ -3,21 +3,33 @@
 namespace App\Http\Controllers;
 
 use App\Models\Segment;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use App\Services\ExportService;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ExpenseReportController extends Controller
 {
     public function index()
     {
 
+        $user = auth()->user();
+        $segments = Segment::where('user_id', $user->id)->get();
+
         return Inertia::render('ExpenseReports/Main', [
+            'segments' => $segments,
+            'user' => $user,
         ]);
     }
 
     public function store(Request $request)
     {
         $request->validate([
+            'addressHome' => 'required',
+            'firstName' => 'required|string',
+            'lastName' => 'required|string',
             'date' => 'required|date',
             'segments' => 'required|array',
             'segments.*.from_address.label' => 'required|string',
@@ -47,7 +59,21 @@ class ExpenseReportController extends Controller
             ]);
         }
 
+        User::where('id', auth()->id())->update(['first_name' => $request->input('firstName'),
+            'last_name' => $request->input('lastName'),
+            'address_home' => $request->input('addressHome.label'),
+        ]);
         return redirect()->route('expenseReport.form')->with('success', 'Expense report created successfully!');
 
+    }
+
+    public function export(ExportService $exportService): StreamedResponse
+    {
+        $spreadsheet = $exportService->generateExpenseReportExport();
+        $writer = new Xlsx($spreadsheet);
+
+        return response()->streamDownload(function () use ($writer) {
+            $writer->save('php://output');
+        }, 'Note_de_frais_2025.xlsx');
     }
 }

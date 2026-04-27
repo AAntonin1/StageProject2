@@ -1,6 +1,6 @@
 <script setup>
 import {useForm} from '@inertiajs/vue3';
-import { ref, computed, watch, onMounted, defineAsyncComponent, provide, toRaw } from 'vue';
+import { ref, computed, watch, onMounted, defineAsyncComponent, provide } from 'vue';
 import { route } from 'ziggy-js';
 
 const AddressAutocomplete = defineAsyncComponent(() => import('@/components/ExpenseReports/AddressAutocomplete.vue'));
@@ -17,18 +17,23 @@ import ButtonWorkAddress from "@/components/ExpenseReports/ButtonWorkAddress.vue
 import SelectTypeDoc from "@/components/ExpenseReports/SelectTypeDoc.vue";
 import ReasonDeplacement from "@/components/ExpenseReports/ReasonDeplacement.vue";
 
+const props = defineProps({
+    user : Object,
+    segments : Array,
+});
+
 // Fetch the home address from localStorage or initialize it to an empty object if not set
 const addressHomeRef = ref({
-    lat: 10,
-    lon: 10,
-    label: '42 rue de la paix, Paris'
+    lat: null,
+    lon: null,
+    label: ''
 });
 
 // Fetch the work address from localStorage or initialize it to an empty object if not set
 const addressWorkRef = ref({
-    lat: 10,
-    lon: 10,
-    label: '42 rue de la paix, Paris'
+    lat: null,
+    lon: null,
+    label: ''
 });
 
 const updateAddressHome = (newAddress) => {
@@ -58,8 +63,11 @@ const form = useForm({
     km_rate: 0.4449,
     firstName: '',
     lastName: '',
-    addressFormular: '',
-    addresshome : addressHomeRef.value ,
+    addressHome: {
+        lat: null,
+        lon: null,
+        label: ''
+    },
     homeWorkDistance: homeWorkDistance.value,
     numAccount : '',
     placeBusiness : '',
@@ -86,16 +94,32 @@ const form = useForm({
 onMounted(() => {
     if (typeof window !== 'undefined') {
         const savedHome = localStorage.getItem('home_address');
-
-        if (savedHome) addressHomeRef.value = JSON.parse(savedHome);
+        if (savedHome) {
+            const parsedHome = JSON.parse(savedHome);
+            addressHomeRef.value = parsedHome;
+            form.addressHome = parsedHome;
+        } else {
+            if(props.user.address_home) {
+                const userHomeAddress = {
+                    label: props.user.address_home,
+                    lat: null,
+                    lon: null
+                };
+                addressHomeRef.value = userHomeAddress;
+                form.addressHome = userHomeAddress;
+                localStorage.setItem('home_address', JSON.stringify(home_address));
+            }
+        }
 
         const savedWork = localStorage.getItem('work_address');
-
-        if (savedWork) addressWorkRef.value = JSON.parse(savedWork);
+        if (savedWork) {
+            const parsedWork = JSON.parse(savedWork);
+            addressWorkRef.value = parsedWork;
+            form.addressWork = parsedWork;
+        }
 
         const savedDist = localStorage.getItem('home_work_dist');
-
-         if (savedDist) {
+        if (savedDist) {
             homeWorkDistance.value = parseFloat(savedDist);
             form.homeWorkDistance = parseFloat(savedDist);
         }
@@ -103,6 +127,17 @@ onMounted(() => {
         const savedForm = localStorage.getItem('form_cache');
         if (savedForm) {
             Object.assign(form, JSON.parse(savedForm));
+        }
+
+        if (!form.firstName && props.user.first_name) {
+            form.firstName = props.user.first_name;
+        }
+        if (!form.lastName && props.user.last_name) {
+            form.lastName = props.user.last_name;
+        }
+
+        if(!form.addressHome.label && props.user.address) {
+            form.addressHome.label = props.user.address;
         }
     }
 });
@@ -161,7 +196,7 @@ const updateDistances = async () => {
 
             if (start?.lat && start?.lon && end?.lat && end?.lon) {
                 segment.distance = (await fetchDistanceFromOSRM(start, end)).toFixed(2); // Update distance to next waypoint
-                if (!segment.manualArrivalTime)calcBtwToAddress(form.segments.indexOf(segment)); // Update arrival time based on new distance
+                if (!segment.manualArrivalTime) calcBtwToAddress(form.segments.indexOf(segment)); // Update arrival time based on new distance
             } else {
                 segment.distance = 0;
             }
@@ -176,7 +211,7 @@ const toggleReturnTrip = () => {
     const returnIndex = form.segments.findIndex(s => s.reason === 'Retour au siège / domicile');
 
     if (returnIndex !== -1) {
-        // if the return trip already exists, remove it
+// if the return trip already exists, remove it
         form.segments.splice(returnIndex, 1);
     } else {
         const firstSegment = form.segments[0];
@@ -215,13 +250,13 @@ const updateReturnSegment = () => {
     const firstSegment = form.segments[0];
     const lastSegment = form.segments[form.segments.length - 1];
 
-    // Look for the return trip segment
+// Look for the return trip segment
     const returnIndex = form.segments.findIndex(s => s.reason === 'Retour au siège / domicile');
 
     if (returnIndex !== -1 && firstSegment && lastSegment) {
         const returnSegment = form.segments[returnIndex];
 
-        // if the return segment exists, we update its addresses and departure time based on the first and last segments
+// if the return segment exists, we update its addresses and departure time based on the first and last segments
         const previousToReturn = form.segments[returnIndex - 1];
 
         if (previousToReturn) {
@@ -237,18 +272,18 @@ const updateReturnSegment = () => {
 // Add work address to a segment
 const addAddressButtonToSegment = (index, field, type) => {
     if(type === 'work') {
-        if(!form.addressWork?.lat) {
+        if(!addressWorkRef.value?.lat) {
             alert("Veuillez configurer votre adresse travail dans les paramètres (bouton en haut à droite).");
             return;
         }
         form.segments[index][field] = {
-            label: form.addressWork.label,
-            lat: form.addressWork.lat,
-            lon: form.addressWork.lon
+            label: addressWorkRef.value.label,
+            lat: addressWorkRef.value.lat,
+            lon: addressWorkRef.value.lon
         }} else if(type === 'home') {
         if (addressHomeRef.value?.lat) {
             form.segments[index][field] = {
-                label: addressHomeRef.value.label || addressHomeRef.value.display_name,
+                label: addressHomeRef.value.label,
                 lat: addressHomeRef.value.lat,
                 lon: addressHomeRef.value.lon
             };
@@ -274,29 +309,27 @@ const swapAddresses = (index) => {
 
 // Convert time string "HH:MM" to timestamp in seconds
 const toTimeStamp = (timeStr) => {
+    if (!timeStr) return 0;
     const [hours, minutes] = timeStr.split(':').map(Number);
     return hours * 3600 + minutes * 60;
 };
 
 // Calculate time between addresses based on distance and average speed, then update arrival time
 const calcBtwToAddress = (index) => {
-    //If someone change the arrival_time return without calculating
     const segment = form.segments[index];
+    if (!segment) return;
+
     if (segment.departure_time && segment.distance) {
         const averageSpeed = 70; // km/h
         const timeBtw = (segment.distance / averageSpeed) * 3600; // time in seconds
         segment.timeBtw = timeBtw;
 
-        // Update arrival_time without arrival_time
-        if (true) {
-            const departureTimestamp = toTimeStamp(segment.departure_time);
-            const arrivalTimestamp = departureTimestamp + timeBtw;
-            const arrivalHours = Math.floor(arrivalTimestamp / 3600) % 24; // Modulo 24 to wrap around if it goes past midnight
-            const arrivalMinutes = Math.floor((arrivalTimestamp % 3600) / 60); // Calculate remaining minutes
-            segment.arrival_time = `${String(arrivalHours).padStart(2, '0')}:${String(arrivalMinutes).padStart(2, '0')}`;
-        }
+        const departureTimestamp = toTimeStamp(segment.departure_time);
+        const arrivalTimestamp = departureTimestamp + timeBtw;
+        const arrivalHours = Math.floor(arrivalTimestamp / 3600) % 24;
+        const arrivalMinutes = Math.floor((arrivalTimestamp % 3600) / 60);
+        segment.arrival_time = `${String(arrivalHours).padStart(2, '0')}:${String(arrivalMinutes).padStart(2, '0')}`;
     }
-
 };
 
 const submit = () => {
@@ -324,16 +357,15 @@ watch(
     () => form.data(),
     (formData) => {
         if (typeof window !== 'undefined') {
-            //If someone change to_arrival time change manualArrivalTime to true
+// Sauvegarde dans le localStorage
             localStorage.setItem('form_cache', JSON.stringify(formData));
-            console.log("form updated : ", formData);
 
+// Logique pour manualArrivalTime
             formData.segments.forEach((segment, index) => {
                 if(segment.arrival_time && !segment.manualArrivalTime) {
-                    form.segments[index].manualArrivalTime = true;
+// Si nécessaire d'automatiser ici
                 }
             });
-
             updateDistances();
         }
     },
@@ -344,7 +376,7 @@ watch(
 watch(addressHomeRef, (newVal) => {
     if (typeof window !== 'undefined') {
         localStorage.setItem('home_address', JSON.stringify(newVal));
-        form.addresshome = newVal;
+        form.addressHome = newVal;
     }
 }, { deep: true });
 
@@ -360,25 +392,31 @@ watch(addressWorkRef, (newVal) => {
 <template>
     <div class="min-h-screen bg-gray-50 p-4 md:p-8 font-sans text-slate-900">
         <div class="max-w-2xl mx-auto">
+            <!-- Header with total distance -->
             <Header :totalDistance="totalDistance"/>
 
+            <!-- Personal information section -->
             <PersonalInformation
                 v-model:first_name="form.firstName"
                 v-model:last_name="form.lastName"
-                v-model:address="form.addressFormular"
-                v-model:place-business="form.placeBusiness"
+                v-model:address="form.addressHome"
+                v-model:place_business="form.placeBusiness"
                 v-model:job="form.job"
                 v-model:vehicle="form.vehicle"
-                v-model:number-plate="form.numberPlate"
+                v-model:number_plate="form.numberPlate"
+                :user="props.user"
             />
 
+            <!-- Home-work distance input -->
             <HomeWorkDistance v-model:homeWorkDistance="form.homeWorkDistance"  />
 
 
+            <!-- Dynamic segments form -->
             <form @submit.prevent="submit" class="space-y-6">
                 <div v-for="(segment, index) in form.segments" :key="segment.id"
                      class="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-200 p-6 relative">
 
+                    <!-- Segment header with title and delete button -->
                     <div class="flex justify-between items-center mb-6 border-b border-slate-100 pb-3">
                         <h2 class="text-xs font-black uppercase text-blue-700 tracking-wider">
                             Trajet #{{ index + 1 }}
@@ -399,18 +437,21 @@ watch(addressWorkRef, (newVal) => {
                             </div>
                             <div class="flex-1 flex gap-2 items-end">
 
+                                <!-- Address autocomplete for departure -->
                                 <AddressAutocomplete
                                     v-model:address="segment.from_address"
                                     placeholder="Lieu de départ"
                                     labelName="Lieu de départ"
                                     class="flex-1"/>
 
+                                <!-- Buttons to quickly fill home and work addresses -->
                                 <ButtonHomeAddress
                                     @add-address-button-to-segment="addAddressButtonToSegment(index, 'from_address', 'home')"/>
 
                                 <ButtonWorkAddress
                                     @add-address-button-to-segment="addAddressButtonToSegment(index, 'from_address', 'work')"/>
 
+                                <!-- Time input for departure -->
                                 <div class="flex flex-col gap-1">
                                     <label :for="'departure_time_' + index" class="text-[10px] font-black uppercase text-slate-600">Départ</label>
                                     <input type="time" v-model="segment.departure_time" lang="fr-FR" :id="'departure_time_' + index"
@@ -419,12 +460,14 @@ watch(addressWorkRef, (newVal) => {
                             </div>
                         </div>
 
+                        <!-- Button to swap addresses and times -->
                         <ButtonSwapAddress @swap-address="swapAddresses(index)"/>
 
                         <div class="flex gap-3 items-end">
                             <div class="w-3 h-3 rounded-full bg-slate-900 mb-3 shadow-md shadow-blue-900/20"></div>
                             <div class="flex-1 flex gap-2 items-end">
 
+                                <!-- Address autocomplete for arrival -->
                                 <AddressAutocomplete
                                     @change="calcBtwToAddress(index)"
                                     v-model:address="segment.to_address"
@@ -432,15 +475,18 @@ watch(addressWorkRef, (newVal) => {
                                     labelName="Lieu d'arrivée"
                                     class="flex-1"/>
 
+                                <!-- Buttons to quickly fill home and work addresses -->
                                 <ButtonHomeAddress
                                     @add-address-button-to-segment="addAddressButtonToSegment(index, 'to_address', 'home')"/>
 
+                                <!-- Button to quickly fill work address -->
                                 <ButtonWorkAddress
                                     @add-address-button-to-segment="addAddressButtonToSegment(index, 'to_address', 'work')"/>
 
 
                                 <div class="flex flex-col gap-1">
 
+                                    <!-- Time input for arrival -->
                                     <label :for="'arrival_time_' + index" class="text-[10px] font-black uppercase text-slate-600">Arrivée</label>
                                     <input type="time" v-model="segment.arrival_time" lang="fr-FR" :id="'arrival_time_' + index"
                                            class="p-3 w-24 bg-slate-100 border-none rounded-xl text-xs font-bold text-slate-600 focus:ring-2 focus:ring-slate-900 "/>
@@ -448,6 +494,7 @@ watch(addressWorkRef, (newVal) => {
                             </div>
                         </div>
 
+                        <!-- Input for reason of the trip and display of distance -->
                         <label for="typeDoc" class="text-[10px] font-black uppercase text-slate-600 block mb-1 ml-1">Motif de déplacement</label>
                         <div class="pt-2 flex items-center gap-4">
                             <ReasonDeplacement v-model:reason="segment.reason"/>
@@ -460,24 +507,28 @@ watch(addressWorkRef, (newVal) => {
                                        class="text-right w-20 p-3 text-sm font-bold bg-blue-100 text-blue-800 px-3 rounded-lg border border-blue-200"/>
                             </div>
                         </div>
+                        <!-- Select for type of document to generate -->
                         <SelectTypeDoc v-model:typeDoc="segment.typeDoc" />
                     </div>
                 </div>
 
+                <!-- Button to add a new segment -->
                 <ButtonAddStep @add-step="addStep"/>
 
 
+                <!-- Button to toggle return trip segment -->
                 <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
                     <ButtonToggleReturnTrip :hasReturnTrip="hasReturnTrip" @toggle-return-trip="toggleReturnTrip"/>
                 </div>
 
+                <!-- Recap component showing the summary of the calculation -->
                 <Recap :realSumTotal="form.segments.reduce((sum, s) => sum + (parseFloat(s.distance) || 0), 0).toFixed(2)"
                        :homeWorkDistance="form.homeWorkDistance"
                        :totalDistance="totalDistance"
                        :form="form"/>
 
                 <button :disabled="form.processing"
-                        @click="submit"
+                        type="submit"
                         class="w-full bg-slate-900 text-white py-5 rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-slate-300 hover:bg-black transition-all active:scale-[0.98] disabled:opacity-50">
                     <span v-if="!form.processing" class="text-lg">Enregistrer la mission</span>
                     <span v-else class="text-lg">Traitement...</span>
@@ -486,7 +537,13 @@ watch(addressWorkRef, (newVal) => {
         </div>
     </div>
 
+    <!-- Menu for setting the kilometer rate and store address-->
     <Menu
         v-model:km_rate="form.km_rate"
+        v-model:first_name="form.firstName"
+        v-model:last_name="form.lastName"
+        v-model:address="form.addressHome"
+        :user="props.user"
     />
+    <p>{{form}}</p>
 </template>
