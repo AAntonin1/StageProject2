@@ -548,7 +548,7 @@ watch(addressWorkRef, (newVal) => {
         v-model:job="form.job"
         v-model:vehicle="form.vehicle"
         v-model:number_plate="form.numberPlate"
-        v-model:place_business="form.addressWork"
+        v-model:place_business="form.placeBusiness"
         :user="props.user"
     />
     <p>{{form}}</p>

@@ -40,6 +40,7 @@ class ExpenseReportController extends Controller
             'placeBusiness' => 'required|string',
             'job' => 'required|string',
             'vehicle' => 'required|string',
+            'numberPlate' => 'required|string',
             'segments' => 'required|array',
             'segments.*.from_address.label' => 'required|string',
             'segments.*.to_address.label' => 'required|string',
@@ -69,7 +70,7 @@ class ExpenseReportController extends Controller
                 'km_rate' => 0.42,
                 'total_km' => 50, // TODO: replace with actual total km after creating segments
                 'total_amount' => $request->input('total_km') * 0.42,
-                'number_plate' => $request->input('number_plate') ?? 'Non renseigné',
+                'number_plate' => $request->input('numberPlate') ?? 'Non renseigné',
             ]
         );
 
@@ -86,7 +87,7 @@ class ExpenseReportController extends Controller
                 'distance_km' => $segment['distance'],
                 'time_btw' => gmdate("H:i:s", (int)$segment['timeBtw']),
                 'type_doc' => $segment['typeDoc'],
-                'expense_report_id' => $expenseReport->id, // TODO: replace with actual expense report ID after creating the expense report
+                'expense_report_id' => $expenseReport->id,
             ]);
         }
 
