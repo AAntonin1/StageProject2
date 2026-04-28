@@ -38,9 +38,15 @@ const addressWorkRef = ref({
 });
 
 const updateAddressHome = (newAddress) => {
-    addressHomeRef.value = newAddress;
+    // Si newAddress contient déjà un label qui est un objet, on l'aplatit
+    if (newAddress && newAddress.label && typeof newAddress.label === 'object') {
+        addressHomeRef.value = { ...newAddress.label };
+    } else {
+        addressHomeRef.value = newAddress;
+    }
+
     if (typeof window !== 'undefined') {
-        localStorage.setItem('home_address', JSON.stringify(newAddress));
+        localStorage.setItem('home_address', JSON.stringify(addressHomeRef.value));
     }
 };
 
@@ -75,7 +81,11 @@ const form = useForm({
     job : '',
     vehicle : '',
     numberPlate : '',
-    addressWork : addressWorkRef.value,
+    addressWork : {
+        lat: null,
+        lon: null,
+        label: ''
+    },
     segments: [
         {
             id: crypto.randomUUID(),
@@ -97,26 +107,30 @@ onMounted(() => {
         const savedHome = localStorage.getItem('home_address');
         if (savedHome) {
             const parsedHome = JSON.parse(savedHome);
-            addressHomeRef.value = parsedHome;
-            form.addressHome = parsedHome;
-        } else {
-            if(props.user.address_home) {
-                const userHomeAddress = {
-                    label: props.user.address_home,
-                    lat: null,
-                    lon: null
-                };
-                addressHomeRef.value = userHomeAddress;
-                form.addressHome = userHomeAddress;
-                localStorage.setItem('home_address', JSON.stringify(home_address));
-            }
+            // Sécurité : si le localStorage est déjà corrompu avec l'imbrication
+            const cleanHome = (parsedHome.label && typeof parsedHome.label === 'object') ? parsedHome.label : parsedHome;
+            addressHomeRef.value = cleanHome;
+            form.addressHome = cleanHome;
+        } else if (props.user.address_home) {
+            const homeData = typeof props.user.address_home === 'string'
+                ? { label: props.user.address_home, lat: null, lon: null }
+                : props.user.address_home;
+            addressHomeRef.value = homeData;
+            form.addressHome = homeData;
         }
 
         const savedWork = localStorage.getItem('work_address');
         if (savedWork) {
             const parsedWork = JSON.parse(savedWork);
-            addressWorkRef.value = parsedWork;
-            form.addressWork = parsedWork;
+            const cleanWork = (parsedWork.label && typeof parsedWork.label === 'object') ? parsedWork.label : parsedWork;
+            addressWorkRef.value = cleanWork;
+            form.addressWork = cleanWork;
+        } else if (props.user.address_work) {
+            const workData = typeof props.user.address_work === 'string'
+                ? { label: props.user.address_work, lat: null, lon: null }
+                : props.user.address_work;
+            addressWorkRef.value = workData;
+            form.addressWork = workData;
         }
 
         const savedDist = localStorage.getItem('home_work_dist');
@@ -136,11 +150,6 @@ onMounted(() => {
         if (!form.vehicle) form.vehicle = props.expense_report.vehicle || '';
         if (!form.numberPlate) form.numberPlate = props.expense_report.number_plate || '';
         if (!form.placeBusiness) form.placeBusiness = props.expense_report.address_work || '';
-
-        // Sécurité pour l'adresse domicile si non définie dans form.addressHome
-        if (!form.addressHome.label && props.user.address_home) {
-            form.addressHome.label = props.user.address_home;
-        }
     }
 });
 
@@ -241,10 +250,28 @@ const hasReturnTrip = computed(() => {
 
 // Calculate total distance
 const totalDistance = computed(() => {
-    const realSum = form.segments.reduce((sum, segment) => sum + (parseFloat(segment.distance) || 0), 0);
     const hwDist = parseFloat(form.homeWorkDistance) || 0;
-    const calcul = realSum - (hwDist * 2);
-    return calcul > 0 ? calcul.toFixed(2) : "0.00";
+
+    // If only one segment
+    if (form.segments.length === 1) {
+        const dist = parseFloat(form.segments[0].distance) || 0;
+        return Math.max(0, dist - (hwDist * 2)).toFixed(2);
+    }
+
+    const calculatedSum = form.segments.reduce((sum, segment, index) => {
+        const dist = parseFloat(segment.distance) || 0;
+        let segmentRemboursable = dist;
+
+        if (index === 0) {
+            segmentRemboursable = Math.max(0, dist - hwDist);
+        } else if (index === form.segments.length - 1) {
+            segmentRemboursable = Math.max(0, dist - hwDist);
+        }
+
+        return sum + segmentRemboursable;
+    }, 0);
+
+    return calculatedSum.toFixed(2);
 });
 
 
@@ -376,16 +403,19 @@ watch(
 
 // Sync the home address in the form with the addressHomeRef,
 watch(addressHomeRef, (newVal) => {
-    if (typeof window !== 'undefined') {
-        localStorage.setItem('home_address', JSON.stringify(newVal));
-        form.addressHome = newVal;
+    if (typeof window !== 'undefined' && newVal) {
+        // Détection et aplatissement si imbrication détectée
+        const clean = (newVal.label && typeof newVal.label === 'object') ? { ...newVal.label } : newVal;
+        localStorage.setItem('home_address', JSON.stringify(clean));
+        form.addressHome = { ...clean };
     }
 }, { deep: true });
 
 watch(addressWorkRef, (newVal) => {
-    if (typeof window !== 'undefined') {
-        localStorage.setItem('work_address', JSON.stringify(newVal));
-        form.addressWork = newVal;
+    if (typeof window !== 'undefined' && newVal) {
+        const clean = (newVal.label && typeof newVal.label === 'object') ? { ...newVal.label } : newVal;
+        localStorage.setItem('work_address', JSON.stringify(clean));
+        form.addressWork = { ...clean };
     }
 }, { deep: true });
 
@@ -394,15 +424,13 @@ watch(addressWorkRef, (newVal) => {
 <template>
     <div class="min-h-screen bg-gray-50 p-4 md:p-8 font-sans text-slate-900">
         <div class="max-w-2xl mx-auto">
-            <!-- Header with total distance -->
             <Header :totalDistance="totalDistance"/>
 
-            <!-- Personal information section -->
             <PersonalInformation
                 v-model:first_name="form.firstName"
                 v-model:last_name="form.lastName"
-                v-model:address="form.addressHome"
-                v-model:place_business="form.placeBusiness"
+                v-model:address="addressHomeRef"
+                v-model:place_business="addressWorkRef"
                 v-model:job="form.job"
                 v-model:vehicle="form.vehicle"
                 v-model:number_plate="form.numberPlate"
@@ -410,16 +438,13 @@ watch(addressWorkRef, (newVal) => {
                 :expense_report="props.expense_report"
             />
 
-            <!-- Home-work distance input -->
             <HomeWorkDistance v-model:homeWorkDistance="form.homeWorkDistance"  />
 
 
-            <!-- Dynamic segments form -->
             <form @submit.prevent="submit" class="space-y-6">
                 <div v-for="(segment, index) in form.segments" :key="segment.id"
                      class="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-200 p-6 relative">
 
-                    <!-- Segment header with title and delete button -->
                     <div class="flex justify-between items-center mb-6 border-b border-slate-100 pb-3">
                         <h2 class="text-xs font-black uppercase text-blue-700 tracking-wider">
                             Trajet #{{ index + 1 }}
@@ -440,21 +465,18 @@ watch(addressWorkRef, (newVal) => {
                             </div>
                             <div class="flex-1 flex gap-2 items-end">
 
-                                <!-- Address autocomplete for departure -->
                                 <AddressAutocomplete
                                     v-model:address="segment.from_address"
                                     placeholder="Lieu de départ"
                                     labelName="Lieu de départ"
                                     class="flex-1"/>
 
-                                <!-- Buttons to quickly fill home and work addresses -->
                                 <ButtonHomeAddress
                                     @add-address-button-to-segment="addAddressButtonToSegment(index, 'from_address', 'home')"/>
 
                                 <ButtonWorkAddress
                                     @add-address-button-to-segment="addAddressButtonToSegment(index, 'from_address', 'work')"/>
 
-                                <!-- Time input for departure -->
                                 <div class="flex flex-col gap-1">
                                     <label :for="'departure_time_' + index" class="text-[10px] font-black uppercase text-slate-600">Départ</label>
                                     <input type="time" v-model="segment.departure_time" lang="fr-FR" :id="'departure_time_' + index"
@@ -463,14 +485,12 @@ watch(addressWorkRef, (newVal) => {
                             </div>
                         </div>
 
-                        <!-- Button to swap addresses and times -->
                         <ButtonSwapAddress @swap-address="swapAddresses(index)"/>
 
                         <div class="flex gap-3 items-end">
                             <div class="w-3 h-3 rounded-full bg-slate-900 mb-3 shadow-md shadow-blue-900/20"></div>
                             <div class="flex-1 flex gap-2 items-end">
 
-                                <!-- Address autocomplete for arrival -->
                                 <AddressAutocomplete
                                     @change="calcBtwToAddress(index)"
                                     v-model:address="segment.to_address"
@@ -478,18 +498,15 @@ watch(addressWorkRef, (newVal) => {
                                     labelName="Lieu d'arrivée"
                                     class="flex-1"/>
 
-                                <!-- Buttons to quickly fill home and work addresses -->
                                 <ButtonHomeAddress
                                     @add-address-button-to-segment="addAddressButtonToSegment(index, 'to_address', 'home')"/>
 
-                                <!-- Button to quickly fill work address -->
                                 <ButtonWorkAddress
                                     @add-address-button-to-segment="addAddressButtonToSegment(index, 'to_address', 'work')"/>
 
 
                                 <div class="flex flex-col gap-1">
 
-                                    <!-- Time input for arrival -->
                                     <label :for="'arrival_time_' + index" class="text-[10px] font-black uppercase text-slate-600">Arrivée</label>
                                     <input type="time" v-model="segment.arrival_time" lang="fr-FR" :id="'arrival_time_' + index"
                                            class="p-3 w-24 bg-slate-100 border-none rounded-xl text-xs font-bold text-slate-600 focus:ring-2 focus:ring-slate-900 "/>
@@ -497,7 +514,6 @@ watch(addressWorkRef, (newVal) => {
                             </div>
                         </div>
 
-                        <!-- Input for reason of the trip and display of distance -->
                         <label for="typeDoc" class="text-[10px] font-black uppercase text-slate-600 block mb-1 ml-1">Motif de déplacement</label>
                         <div class="pt-2 flex items-center gap-4">
                             <ReasonDeplacement v-model:reason="segment.reason"/>
@@ -510,21 +526,17 @@ watch(addressWorkRef, (newVal) => {
                                        class="text-right w-20 p-3 text-sm font-bold bg-blue-100 text-blue-800 px-3 rounded-lg border border-blue-200"/>
                             </div>
                         </div>
-                        <!-- Select for type of document to generate -->
                         <SelectTypeDoc v-model:typeDoc="segment.typeDoc" />
                     </div>
                 </div>
 
-                <!-- Button to add a new segment -->
                 <ButtonAddStep @add-step="addStep"/>
 
 
-                <!-- Button to toggle return trip segment -->
                 <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
                     <ButtonToggleReturnTrip :hasReturnTrip="hasReturnTrip" @toggle-return-trip="toggleReturnTrip"/>
                 </div>
 
-                <!-- Recap component showing the summary of the calculation -->
                 <Recap :realSumTotal="form.segments.reduce((sum, s) => sum + (parseFloat(s.distance) || 0), 0).toFixed(2)"
                        :homeWorkDistance="form.homeWorkDistance"
                        :totalDistance="totalDistance"
@@ -539,8 +551,7 @@ watch(addressWorkRef, (newVal) => {
             </form>
         </div>
     </div>
-
-    <!-- Menu for setting the kilometer rate and store address-->
+    <p>{{ form }}</p>
     <Menu
         v-model:km_rate="form.km_rate"
         v-model:first_name="form.firstName"
@@ -548,8 +559,6 @@ watch(addressWorkRef, (newVal) => {
         v-model:job="form.job"
         v-model:vehicle="form.vehicle"
         v-model:number_plate="form.numberPlate"
-        v-model:place_business="form.placeBusiness"
         :user="props.user"
     />
-    <p>{{form}}</p>
 </template>

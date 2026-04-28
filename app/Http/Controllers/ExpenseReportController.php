@@ -37,7 +37,7 @@ class ExpenseReportController extends Controller
             'firstName' => 'required|string',
             'lastName' => 'required|string',
             'date' => 'required|date',
-            'placeBusiness' => 'required|string',
+            'addressWork' => 'required',
             'job' => 'required|string',
             'vehicle' => 'required|string',
             'numberPlate' => 'required|string',
@@ -64,7 +64,7 @@ class ExpenseReportController extends Controller
             [
                 'date' => now(),
                 'status' => 'draft',
-                'address_work' => $request->input('placeBusiness') ?? 'Non renseigné',
+                'address_work' => $request->input('addressWork')->label ?? 'Non renseigné',
                 'job' => $request->input('job') ?? 'Non renseigné',
                 'vehicle' => $request->input('vehicle') ?? 'Non renseigné',
                 'km_rate' => 0.42,
@@ -93,7 +93,8 @@ class ExpenseReportController extends Controller
 
         User::where('id', auth()->id())->update(['first_name' => $request->input('firstName'),
             'last_name' => $request->input('lastName'),
-            'address_home' => $request->input('addressHome.label'),
+            'address_home' => $request->input('addressHome'),
+            'address_work' => $request->input('addressWork'),
         ]);
 
         $expenseReport->update([

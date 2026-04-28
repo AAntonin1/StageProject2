@@ -21,23 +21,17 @@ const isMissingData = computed(() => {
         props.user.first_name,
         props.user.last_name,
         props.user.address_home,
-        props.user.place_business,
-        props.user.job,
-        props.user.vehicle,
-        props.user.number_plate
+        props.user.address_work,
+        props.expense_report?.job,
+        props.expense_report?.vehicle,
+        props.expense_report?.number_plate
     ];
 
-    const modelFields = [
-        firstName.value,
-        lastName.value,
-        address.value?.label,
-        placeBusiness.value,
-        job.value,
-        vehicle.value,
-        numberPlate.value
-    ];
 
-    return userFields.some((val, index) => !val && !modelFields[index]);
+    //Check if props fields are empty
+    return userFields.some((val) =>
+        val == null || (typeof val === 'string' && val.trim() === '')
+    );
 });
 </script>
 
@@ -58,7 +52,7 @@ const isMissingData = computed(() => {
             </div>
             <div class="col-span-2">
                 <label class="text-[10px] font-black uppercase text-slate-600 block mb-1 ml-1">Adresse Domicile</label>
-                <AddressAutocomplete v-model:address="address" placeholder="Votre adresse travail" />
+                <AddressAutocomplete v-model:address="address" placeholder="Votre adresse de domicile" />
             </div>
         </div>
     </div>
@@ -68,19 +62,19 @@ const isMissingData = computed(() => {
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
                 <label class="text-[10px] font-black uppercase text-slate-600 block mb-1 ml-1">Lieu de travail</label>
-                <input type="text" v-model="placeBusiness" placeholder="Libramont" class="w-full bg-slate-100 border-none rounded-xl text-sm font-bold p-3" />
+                <AddressAutocomplete v-model:address="placeBusiness" placeholder="Votre adresse travail" />
             </div>
             <div>
                 <label class="text-[10px] font-black uppercase text-slate-600 block mb-1 ml-1">Profession</label>
-                <input type="text" v-model="job" placeholder="Profession..." class="w-full bg-slate-100 border-none rounded-xl text-sm font-bold p-3" />
+                <input type="text" v-model="job" placeholder="Profession..." class="text-slate-600 w-full bg-slate-100 border-none rounded-xl text-sm font-bold p-3" />
             </div>
             <div>
                 <label class="text-[10px] font-black uppercase text-slate-600 block mb-1 ml-1">Véhicule</label>
-                <input type="text" v-model="vehicle" placeholder="Peugeot 208" class="w-full bg-slate-100 border-none rounded-xl text-sm font-bold p-3" />
+                <input type="text" v-model="vehicle" placeholder="Peugeot 208" class="text-slate-600 w-full bg-slate-100 border-none rounded-xl text-sm font-bold p-3" />
             </div>
             <div>
                 <label class="text-[10px] font-black uppercase text-slate-600 block mb-1 ml-1">Plaque d'immatriculation</label>
-                <input type="text" v-model="numberPlate" placeholder="ABC-123" class="w-full bg-slate-100 border-none rounded-xl text-sm font-bold p-3" />
+                <input type="text" v-model="numberPlate" placeholder="ABC-123" class="text-slate-600 w-full bg-slate-100 border-none rounded-xl text-sm font-bold p-3" />
             </div>
         </div>
     </div>

@@ -24,6 +24,12 @@ class User extends Authenticatable
      *
      * @return array<string, string>
      */
+
+    protected $casts = [
+        'address_home' => 'array',
+        'address_work' => 'array',
+    ];
+
     protected function casts(): array
     {
         return [

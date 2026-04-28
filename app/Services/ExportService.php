@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Expense_report;
 use App\Models\Segment;
 use App\Models\User;
+use Carbon\Carbon;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class ExportService
@@ -22,7 +23,7 @@ class ExportService
         $sheet = $spreadsheet->getActiveSheet();
 
         // Get User info
-        $user = User::where('id', 1)->first();
+        $user = User::where('id', 4)->first();
 
         // Fetch data from the database
         $segments = Segment::orderBy('date', 'asc')
@@ -33,19 +34,35 @@ class ExportService
             ->where('month_year', date('m/Y'))
             ->first();
 
-        // Injection data into the template
-        //        $startRow = 10;
-        //        foreach ($trajets as $index => $trajet) {
-        //            $currentRow = $startRow + $index;
-        //
-        //            $sheet->setCellValue("A{$currentRow}", $trajet->date);
-        //            $sheet->setCellValue("B{$currentRow}", $trajet->depart);
-        //            $sheet->setCellValue("C{$currentRow}", $trajet->arrivee);
-        //            $sheet->setCellValue("D{$currentRow}", $trajet->distance);
-        //        }
-
         $sheet->setCellValue('C3', $user->first_name.' '.$user->last_name);
         $sheet->setCellValue('B5', $user->address_home);
+        $sheet->setCellValue('B5', $user->address_home);
+        $sheet->setCellValue('E4', $expense_report->address_work);
+        $sheet->setCellValue('E5', $expense_report->job);
+        $sheet->setCellValue('G3', $expense_report->vehicle);
+        $sheet->setCellValue('G4', $expense_report->number_plate);
+
+        $currentRow = 9;
+
+        foreach ($segments as $segment) {
+            $sheet->setCellValue('A'.$currentRow, 'motif du déplacement: '.$segment->reason);
+
+            // Fill in the segment details
+            $currentRow++;
+            $sheet->setCellValue('B'.$currentRow, Carbon::parse($segment->date)->format('d/m/Y'));
+            $sheet->setCellValue('C'.$currentRow, $segment->from_address);
+            $sheet->setCellValue('D'.$currentRow, $segment->departure_time);
+            $sheet->setCellValue('E'.$currentRow, $segment->to_address);
+            $sheet->setCellValue('F'.$currentRow, $segment->arrival_time);
+            $sheet->setCellValue('G'.$currentRow, $segment->distance_km);
+
+            // Jump to next line for return trip
+            $currentRow += 2;
+
+            if ($currentRow > 40) {
+                break;
+            }
+        }
 
         return $spreadsheet;
     }

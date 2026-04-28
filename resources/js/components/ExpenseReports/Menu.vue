@@ -13,7 +13,6 @@ const lastName = defineModel('last_name');
 const job = defineModel('job');
 const vehicle = defineModel('vehicle');
 const numberPlate = defineModel('number_plate');
-const placeBusiness = defineModel('place_business');
 
 
 const { addressHomeRef } = inject('dataHomeAddress');
@@ -55,11 +54,11 @@ const logout = () => {
                     <div class="grid grid-cols-2 gap-3">
                         <div class="space-y-1">
                             <span class="text-[9px] text-slate-400 ml-1 uppercase font-bold">Prénom</span>
-                            <input type="text" v-model="firstName" placeholder="Prénom" class="w-full bg-slate-50 border-none rounded-xl p-3 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-slate-900" />
+                            <input type="text" v-model="firstName" placeholder="Prénom" class="bg-slate-100 w-full bg-slate-50 border-none rounded-xl p-3 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-slate-900" />
                         </div>
                         <div class="space-y-1">
                             <span class="text-[9px] text-slate-400 ml-1 uppercase font-bold">Nom</span>
-                            <input type="text" v-model="lastName" placeholder="Nom" class="w-full bg-slate-50 border-none rounded-xl p-3 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-slate-900" />
+                            <input type="text" v-model="lastName" placeholder="Nom" class="bg-slate-100 w-full bg-slate-50 border-none rounded-xl p-3 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-slate-900" />
                         </div>
                     </div>
                 </section>
@@ -83,19 +82,15 @@ const logout = () => {
                     <div class="grid grid-cols-2 gap-3">
                         <div class="space-y-1">
                             <span class="text-[9px] text-slate-400 ml-1 uppercase font-bold">Métier</span>
-                            <input type="text" v-model="job" placeholder="Ex: Développeur" class="w-full bg-slate-50 border-none rounded-xl p-3 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-slate-900" />
-                        </div>
-                        <div class="space-y-1">
-                            <span class="text-[9px] text-slate-400 ml-1 uppercase font-bold">Ville d'affectation</span>
-                            <input type="text" v-model="placeBusiness" placeholder="Ex: Libramont" class="w-full bg-slate-50 border-none rounded-xl p-3 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-slate-900" />
+                            <input type="text" v-model="job" placeholder="Ex: Développeur" class="bg-slate-100 w-full bg-slate-50 border-none rounded-xl p-3 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-slate-900" />
                         </div>
                         <div class="space-y-1">
                             <span class="text-[9px] text-slate-400 ml-1 uppercase font-bold">Modèle Véhicule</span>
-                            <input type="text" v-model="vehicle" placeholder="Ex: Tesla Model 3" class="w-full bg-slate-50 border-none rounded-xl p-3 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-slate-900" />
+                            <input type="text" v-model="vehicle" placeholder="Ex: Tesla Model 3" class="bg-slate-100 w-full bg-slate-50 border-none rounded-xl p-3 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-slate-900" />
                         </div>
                         <div class="space-y-1">
                             <span class="text-[9px] text-slate-400 ml-1 uppercase font-bold">Plaque</span>
-                            <input type="text" v-model="numberPlate" placeholder="Ex: 1-ABC-123" class="w-full bg-slate-50 border-none rounded-xl p-3 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-slate-900" />
+                            <input type="text" v-model="numberPlate" placeholder="Ex: 1-ABC-123" class="bg-slate-100 w-full bg-slate-50 border-none rounded-xl p-3 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-slate-900" />
                         </div>
                     </div>
                 </section>

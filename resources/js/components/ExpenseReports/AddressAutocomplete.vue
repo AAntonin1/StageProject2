@@ -16,7 +16,6 @@ const isSelecting = ref(false);
 const isOnline = ref(navigator.onLine);
 const isDbLoading = ref(false);
 
-// Injection (optionnelle ici si utilisé directement dans RateInput)
 const homeContext = inject('dataHomeAddress', null);
 
 let db = null;
