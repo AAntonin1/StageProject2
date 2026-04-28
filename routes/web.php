@@ -10,10 +10,12 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/form', [ExpenseReportController::class, 'index'])->name('expenseReport.form');
 });
 
-//Login
+//Users
 Route::get('/', [UserController::class, 'login'])->name('login');
 Route::post('/checkUser', [UserController::class, 'checkLogin'])->name('user.login');
 Route::post('/logout', [UserController::class, 'logout'])->name('user.logout');
+Route::post('/store', [UserController::class, 'store'])->name('users.store');
+Route::delete('/destroy/{id}', [UserController::class, 'destroy'])->name('users.destroy');
 
 // Uniquement pour le développement
 Route::get('/test-export', [App\Http\Controllers\ExpenseReportController::class, 'export']);

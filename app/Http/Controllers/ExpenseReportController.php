@@ -15,9 +15,11 @@ class ExpenseReportController extends Controller
 {
     public function index()
     {
-
         $user = auth()->user();
+
         $segments = Segment::where('user_id', $user->id)->get();
+
+        $users = User::with('roles')->get();
 
         $expense_report = Expense_report::where('user_id', $user->id)
             ->where('month_year', date('m/Y'))
@@ -27,6 +29,7 @@ class ExpenseReportController extends Controller
             'segments' => $segments,
             'user' => $user,
             'expense_report' => $expense_report,
+            'users' => $users,
         ]);
     }
 
@@ -85,7 +88,7 @@ class ExpenseReportController extends Controller
                 'arrival_time' => $segment['arrival_time'],
                 'reason' => $segment['reason'],
                 'distance_km' => $segment['distance'],
-                'time_btw' => gmdate("H:i:s", (int)$segment['timeBtw']),
+                'time_btw' => gmdate('H:i:s', (int) $segment['timeBtw']),
                 'type_doc' => $segment['typeDoc'],
                 'expense_report_id' => $expenseReport->id,
             ]);

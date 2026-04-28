@@ -38,4 +38,40 @@ class UserController extends Controller
 
         return redirect()->route('login');
     }
+
+    public function store(Request $request)
+    {
+        $request->validate([
+            'username' => 'required|string|unique:users,user_name',
+            'password' => 'required|string',
+            'first_name' => 'required|string',
+            'last_name' => 'required|string',
+            'email' => 'required|string|email|unique:users',
+            'role' => 'required|string',
+        ]);
+
+        $user = User::create([
+            'user_name' => $request->input('username'),
+            'password' => $request->input('password'),
+            'first_name' => $request->input('first_name'),
+            'last_name' => $request->input('last_name'),
+            'email' => $request->input('email'),
+            'name' => $request->input('first_name').' '.$request->input('last_name'),
+        ]);
+
+        // Put role user
+        $role = $request->input('role');
+        $user->assignRole($role);
+
+
+        return redirect()->back()->with('success', 'Expense report added successfully!');
+    }
+
+    public function destroy($id)
+    {
+        $user = User::findOrFail($id);
+        $user->delete();
+
+        return redirect()->back()->with('success', 'User deleted successfully!');
+    }
 }
