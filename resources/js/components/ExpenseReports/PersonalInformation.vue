@@ -44,11 +44,11 @@ const isMissingData = computed(() => {
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
                 <label class="text-[10px] font-black uppercase text-slate-600 block mb-1 ml-1">Prénom</label>
-                <input type="text" v-model="firstName" placeholder="Jean" class="w-full bg-white border-none rounded-xl text-sm font-bold text-slate-600 focus:ring-2 focus:ring-slate-900 p-3" />
+                <input type="text" v-model="firstName" placeholder="Jean" class="w-full bg-slate-100 border-none rounded-xl text-sm font-bold text-slate-600 focus:ring-2 focus:ring-slate-900 p-3" />
             </div>
             <div>
                 <label class="text-[10px] font-black uppercase text-slate-600 block mb-1 ml-1">Nom</label>
-                <input type="text" v-model="lastName" placeholder="Dupont" class="w-full bg-white border-none rounded-xl text-sm font-bold text-slate-600 focus:ring-2 focus:ring-slate-900 p-3" />
+                <input type="text" v-model="lastName" placeholder="Dupont" class="w-full bg-slate-100 border-none rounded-xl text-sm font-bold text-slate-600 focus:ring-2 focus:ring-slate-900 p-3" />
             </div>
             <div class="col-span-2">
                 <label class="text-[10px] font-black uppercase text-slate-600 block mb-1 ml-1">Adresse Domicile</label>

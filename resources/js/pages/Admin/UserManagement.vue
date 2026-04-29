@@ -46,44 +46,44 @@ const deleteUser = (userId) => {
 <template>
     <div class="space-y-8">
         <section class="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-200 p-6">
-            <div class="flex items-center gap-3 mb-6 border-b border-slate-100 pb-4">
+            <div class="flex items-center gap-3 mb-3 border-slate-100 pb-4">
                 <div class="p-2 bg-blue-50 rounded-lg">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                     </svg>
                 </div>
-                <h2 class="text-sm font-black uppercase text-slate-700 tracking-wider">Créer un nouvel utilisateur</h2>
+                <h2 class="text-sm font-black uppercase text-slate-700">Créer un nouvel utilisateur</h2>
             </div>
 
             <form @submit.prevent="submit" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="space-y-1">
-                    <label class="text-[10px] font-black uppercase text-slate-500 ml-1">Prénom</label>
-                    <input v-model="form.first_name" type="text" class="w-full p-3 bg-slate-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500" placeholder="Jean">
+                    <label class="text-[10px] font-black uppercase text-slate-600 ml-1">Prénom</label>
+                    <input v-model="form.first_name" type="text" class="w-full p-3 bg-slate-100 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500" placeholder="Jean">
                 </div>
                 <div class="space-y-1">
-                    <label class="text-[10px] font-black uppercase text-slate-500 ml-1">Nom</label>
-                    <input v-model="form.last_name" type="text" class="w-full p-3 bg-slate-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500" placeholder="Dupont">
+                    <label class="text-[10px] font-black uppercase text-slate-600 ml-1">Nom</label>
+                    <input v-model="form.last_name" type="text" class="w-full p-3 bg-slate-100 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500" placeholder="Dupont">
                 </div>
                 <div class="md:col-span-2 space-y-1">
-                    <label class="text-[10px] font-black uppercase text-slate-500 ml-1">Nom d'utilisateur</label>
-                    <input v-model="form.username" type="text" class="w-full p-3 bg-slate-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500" placeholder="jdupont">
+                    <label class="text-[10px] font-black uppercase text-slate-600 ml-1">Nom d'utilisateur</label>
+                    <input v-model="form.username" type="text" class="w-full p-3 bg-slate-100 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500" placeholder="jdupont">
                 </div>
                 <div class="md:col-span-2 space-y-1">
-                    <label class="text-[10px] font-black uppercase text-slate-500 ml-1">Adresse Email</label>
-                    <input v-model="form.email" type="email" class="w-full p-3 bg-slate-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500" placeholder="email@exemple.com">
+                    <label class="text-[10px] font-black uppercase text-slate-600 ml-1">Adresse Email</label>
+                    <input v-model="form.email" type="email" class="w-full p-3 bg-slate-100 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500" placeholder="email@exemple.com">
                 </div>
                 <div class="space-y-1">
-                    <label class="text-[10px] font-black uppercase text-slate-500 ml-1">Mot de passe</label>
-                    <input v-model="form.password" type="password" class="w-full p-3 bg-slate-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500">
+                    <label class="text-[10px] font-black uppercase text-slate-600 ml-1">Mot de passe</label>
+                    <input v-model="form.password" type="password" class="w-full p-3 bg-slate-100 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500" placeholder="••••••••">
                 </div>
                 <div class="space-y-1">
-                    <label class="text-[10px] font-black uppercase text-slate-500 ml-1">Rôle</label>
-                    <select v-model="form.role" class="w-full p-3 bg-slate-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500">
+                    <label class="text-[10px] font-black uppercase text-slate-600 ml-1">Rôle</label>
+                    <select v-model="form.role" class="w-full p-3 bg-slate-100 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500">
                         <option value="user">Utilisateur</option>
                         <option value="admin">Administrateur</option>
                     </select>
                 </div>
-                <button type="submit" :disabled="form.processing" class="md:col-span-2 mt-2 bg-blue-600 text-white py-3 rounded-xl font-bold text-sm uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-200">
+                <button type="submit" :disabled="form.processing" class="md:col-span-2 mt-2 bg-black text-white py-3 rounded-xl font-bold text-sm uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-200">
                     Ajouter au système
                 </button>
             </form>

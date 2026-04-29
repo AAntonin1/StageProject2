@@ -10,6 +10,7 @@ const props = defineProps({
 
 const realDeduction = computed(() => {
     const diff = (parseFloat(props.realSumTotal) || 0) - (parseFloat(props.totalDistance) || 0);
+
     return diff.toFixed(2);
 });
 </script>
