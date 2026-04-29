@@ -60,7 +60,7 @@ const realDeduction = computed(() => {
             <div class="flex items-end justify-between pt-2">
                 <div>
                     <p class="text-xs font-black uppercase text-blue-600">Total Remboursable</p>
-                    <p class="text-[9px] text-slate-400 font-bold uppercase mt-1">Calculé selon les règles URSSAF</p>
+                    <p class="text-[9px] text-slate-600 font-bold uppercase mt-1">Calculé selon les règles URSSAF</p>
                 </div>
                 <div class="text-right">
                     <div class="text-4xl font-black text-slate-900 leading-none tracking-tighter">

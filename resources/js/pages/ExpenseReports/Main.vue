@@ -398,9 +398,9 @@ watch(addressWorkRef, (newVal) => {
         <div class="max-w-2xl mx-auto">
             <Header :totalDistance="totalDistance"/>
 
-            <div class="flex gap-2 mb-6">
-                <button @click="activeTab = 'mission'" class="px-4 py-2 rounded-xl font-bold shadow">Mission</button>
-                <button v-if="$page.props.auth.user.roles.includes('admin')" @click="activeTab = 'admin'" class="px-4 py-2 rounded-xl font-bold shadow">Admin</button>
+            <div v-if="$page.props.auth.user.roles.includes('admin')" class="flex gap-2 mb-6">
+                <button @click="activeTab = 'mission'" :class="['px-4 py-2 rounded-xl font-bold shadow', activeTab === 'mission' ? 'bg-slate-900 text-white' : '']">Mission</button>
+                <button @click="activeTab = 'admin'" :class="['px-4 py-2 rounded-xl font-bold shadow', activeTab === 'admin' ? 'bg-slate-900 text-white' : '']">Admin</button>
             </div>
 
             <div v-if="activeTab === 'mission'">
@@ -494,11 +494,15 @@ watch(addressWorkRef, (newVal) => {
                                 <ReasonDeplacement v-model:reason="segment.reason"/>
 
                                 <div class="ml-auto flex items-center gap-2">
-                                    <label class="text-[10px] font-black uppercase text-slate-600 block mb-1">
+                                    <label
+                                        for="distance"
+                                        class="text-[10px] font-black uppercase text-slate-600 block mb-1">
                                         Distance (km)
                                     </label>
-                                    <input type="text" v-model="segment.distance"
-                                           class="text-right w-20 p-3 text-sm font-bold bg-blue-100 text-blue-800 px-3 rounded-lg border border-blue-200"/>
+                                    <input
+                                        id="distance"
+                                        type="text" v-model="segment.distance"
+                                        class="text-right w-20 p-3 text-sm font-bold bg-blue-100 text-blue-800 px-3 rounded-lg border border-blue-200"/>
                                 </div>
                             </div>
 

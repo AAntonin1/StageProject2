@@ -41,6 +41,7 @@
             <title>{{ config('app.name', 'Laravel') }}</title>
         </x-inertia::head>
 
+        <link rel="manifest" href="/manifest.json">
         @routes
         @vite(['resources/css/app.css', 'resources/js/app.ts', "resources/js/pages/{$page['component']}.vue"])
 

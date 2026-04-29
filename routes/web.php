@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Route;
 
 // Expense Report
 Route::middleware(['auth'])->group(function () {
-    Route::post('/store', [ExpenseReportController::class, 'store'])->name('expenseReport.store');
+    Route::post('/expense-reports', [ExpenseReportController::class, 'store'])->name('expenseReport.store');
     Route::get('/form', [ExpenseReportController::class, 'index'])->name('expenseReport.form');
 });
 

@@ -98,7 +98,7 @@ const logout = () => {
                 <section v-if="$page.props.auth.user.roles.includes('admin')" class="space-y-4 pt-4 border-t border-slate-50">
                     <label class="text-[10px] font-black uppercase text-slate-400">Configuration Admin (Tarif km)</label>
                     <div class="relative">
-                        <input type="number" step="0.001" class="w-full bg-slate-900 border-none rounded-2xl py-4 px-5 font-black text-xl text-white focus:ring-0" v-model="km_rate" />
+                        <input type="number" step="0.001" class="bg-slate-100 w-full bg-slate-50 border-none rounded-xl p-3 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-slate-900" v-model="km_rate" />
                         <span class="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 font-bold">€ / KM</span>
                     </div>
                 </section>

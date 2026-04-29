@@ -83,7 +83,7 @@ const deleteUser = (userId) => {
                         <option value="admin">Administrateur</option>
                     </select>
                 </div>
-                <button type="submit" :disabled="form.processing" class="md:col-span-2 mt-2 bg-black text-white py-3 rounded-xl font-bold text-sm uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-200">
+                <button type="submit" :disabled="form.processing" class="md:col-span-2 mt-2 bg-slate-900 text-white py-3 rounded-xl font-bold text-sm uppercase tracking-widest hover:bg-black transition-all shadow-lg shadow-blue-200">
                     Ajouter au système
                 </button>
             </form>

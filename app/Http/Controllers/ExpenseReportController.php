@@ -56,7 +56,7 @@ class ExpenseReportController extends Controller
         ]);
 
         $userId = auth()->id();
-        $dateInput = $request->input('date'); // Format 'YYYY-MM-DD'
+        $dateInput = $request->input('date'); // Format YYYY-MM-DD
         $monthYear = date('m/Y', strtotime($dateInput));
 
         $expenseReport = Expense_report::firstOrCreate(
