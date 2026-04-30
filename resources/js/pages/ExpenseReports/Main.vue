@@ -77,6 +77,7 @@ const form = useForm({
             distance: 0,
             timeBtw: 0,
             manualArrivalTime: false,
+            isManualUpdateKM : false,
             typeDoc: 'EAM'
         }
     ],
@@ -112,6 +113,8 @@ const updateDistances = async () => {
 
     debounceTimeout = setTimeout(async () => {
         const promises = form.segments.map(async (segment) => {
+            if (segment.isManualUpdateKM) return;
+
             const start = segment.from_address;
             const end = segment.to_address;
 
@@ -195,6 +198,8 @@ const addAddressButtonToSegment = (index, field, type) => {
             alert("Veuillez configurer votre adresse domicile dans les paramètres (bouton en haut à droite).");
         }
     }
+    form.segments[index].isManualUpdateKM = false;
+    updateDistances();
 };
 
 const swapAddresses = (index) => {
@@ -312,6 +317,7 @@ onUnmounted(() => {
                                 <div class="flex-1 flex gap-2 items-end">
 
                                     <AddressAutocomplete
+                                        @change="segment.isManualUpdateKM = false"
                                         v-model:address="segment.from_address"
                                         placeholder="Lieu de départ"
                                         labelName="Lieu de départ"
@@ -338,7 +344,7 @@ onUnmounted(() => {
                                 <div class="flex-1 flex gap-2 items-end">
 
                                     <AddressAutocomplete
-                                        @change="calcBtwToAddress(index)"
+                                        @change="calcBtwToAddress(index); segment.isManualUpdateKM = false"
                                         v-model:address="segment.to_address"
                                         placeholder="Lieu d'arrivée"
                                         labelName="Lieu d'arrivée"
@@ -369,6 +375,7 @@ onUnmounted(() => {
                                         Distance (km)
                                     </label>
                                     <input
+                                        @click="segment.isManualUpdateKM = true"
                                         id="distance"
                                         type="text" v-model="segment.distance"
                                         class="text-right w-20 p-3 text-sm font-bold bg-blue-100 text-blue-800 px-3 rounded-lg border border-blue-200"/>

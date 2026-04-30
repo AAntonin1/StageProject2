@@ -14,6 +14,8 @@ export function useFormWatchers() {
             (formData) => {
                 if (typeof window !== 'undefined') {
                     localStorage.setItem('form_cache', JSON.stringify(formData));
+
+
                     updateDistances();
                 }
             },
