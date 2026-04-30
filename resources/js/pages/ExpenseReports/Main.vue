@@ -1,8 +1,9 @@
 <script setup>
 import {useForm} from '@inertiajs/vue3';
-import { ref, computed, watch, onMounted, defineAsyncComponent, provide } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted, defineAsyncComponent, provide } from 'vue';
 import { route } from 'ziggy-js';
 import { usePage } from '@inertiajs/vue3';
+import axios from 'axios'; // Importé pour la synchronisation en arrière-plan
 
 const AddressAutocomplete = defineAsyncComponent(() => import('@/components/ExpenseReports/AddressAutocomplete.vue'));
 const Recap = defineAsyncComponent(() => import('@/components/ExpenseReports/Recap.vue'));
@@ -30,6 +31,11 @@ const props = defineProps({
 });
 
 const activeTab = ref('mission');
+
+
+const isOnline = ref(navigator.onLine);
+const offlineQueue = ref([]);
+let checkConnInterval = null;
 
 const addressHomeRef = ref({
     lat: null,
@@ -105,8 +111,68 @@ const form = useForm({
     ],
 });
 
+// Handle online event to process the queue when the user comes back online
+const handleOnline = async () => {
+    try {
+        await fetch('/favicon.ico', {
+            method: 'HEAD',
+            mode: 'no-cors',
+            cache: 'no-store'
+        });
+
+        if (!isOnline.value) {
+            console.log('Connecté !');
+            isOnline.value = true;
+            processQueue(); // On relance la file d'attente
+        }
+    } catch (error) {
+        if (isOnline.value) {
+            console.log('Hors-ligne détecté (réel)');
+            isOnline.value = false;
+        }
+    }
+};
+
+const processQueue = async () => {
+    if (offlineQueue.value.length === 0) return;
+
+    const queue = [...offlineQueue.value];
+    for (const data of queue) {
+        try {
+
+            await axios.post(route('expenseReport.store'), data, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                }
+            });
+
+            offlineQueue.value = offlineQueue.value.filter(item => item !== data);
+            localStorage.setItem('offline_queue', JSON.stringify(offlineQueue.value));
+        } catch (error) {
+
+            if (error.response && error.response.status === 422) {
+                console.error("Erreur de validation Laravel :", error.response.data.errors);
+            } else {
+                console.error("Échec de la synchro :", error);
+            }
+            break;
+        }
+    }
+};
+
 onMounted(() => {
     if (typeof window !== 'undefined') {
+        // Load offline queue from localStorage (Ajouté)
+        const savedQueue = localStorage.getItem('offline_queue');
+        if (savedQueue) offlineQueue.value = JSON.parse(savedQueue);
+
+        checkConnInterval = setInterval(handleOnline, 5000);
+
+        //Event listenrs for online/offline
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', () => isOnline.value = false);
+
         const savedHome = localStorage.getItem('home_address');
         if (savedHome) {
             const parsedHome = JSON.parse(savedHome);
@@ -152,7 +218,17 @@ onMounted(() => {
         if (!form.vehicle) form.vehicle = props.expense_report.vehicle || '';
         if (!form.numberPlate) form.numberPlate = props.expense_report.number_plate || '';
         if (!form.placeBusiness) form.placeBusiness = props.expense_report.address_work || '';
+
+        // Check initial si on peut synchroniser (Ajouté)
+        if (isOnline.value) processQueue();
     }
+});
+
+// Delete event listeners on unmount to prevent memory leaks
+onUnmounted(() => {
+    clearInterval(checkConnInterval); // Nettoyage de l'intervalle
+    window.removeEventListener('online', handleOnline);
+    window.removeEventListener('offline', () => isOnline.value = false);
 });
 
 let debounceTimeout = null;
@@ -161,7 +237,7 @@ const addStep = () => {
     const lastSegment = form.segments[form.segments.length - 1];
     form.segments.push({
         id: crypto.randomUUID(),
-        from_address: lastSegment ? lastSegment.to_address : '',
+        from_address: lastSegment ? { ...lastSegment.to_address } : { label: '', lat: null, lon: null },
         to_address: '',
         departure_time: lastSegment ? lastSegment.arrival_time : '',
         arrival_time: '',
@@ -180,6 +256,8 @@ const removeStep = async (index) => {
 };
 
 const fetchDistanceFromOSRM = async (start, end) => {
+    if (!isOnline.value) return 0;
+
     const coords = `${start.lon},${start.lat};${end.lon},${end.lat}`;
     try {
         const response = await fetch(`https://router.project-osrm.org/route/v1/driving/${coords}?overview=false`);
@@ -202,7 +280,8 @@ const updateDistances = async () => {
             const end = segment.to_address;
 
             if (start?.lat && start?.lon && end?.lat && end?.lon) {
-                segment.distance = (await fetchDistanceFromOSRM(start, end)).toFixed(2);
+                const dist = await fetchDistanceFromOSRM(start, end);
+                segment.distance = dist.toFixed(2);
                 if (!segment.manualArrivalTime) calcBtwToAddress(form.segments.indexOf(segment));
             } else {
                 segment.distance = 0;
@@ -244,11 +323,6 @@ const hasReturnTrip = computed(() => {
 const totalDistance = computed(() => {
     const hwDist = parseFloat(form.homeWorkDistance) || 0;
 
-    if (form.segments.length === 1) {
-        const dist = parseFloat(form.segments[0].distance) || 0;
-        return Math.max(0, dist - (hwDist * 2)).toFixed(2);
-    }
-
     const calculatedSum = form.segments.reduce((sum, segment, index) => {
         const dist = parseFloat(segment.distance) || 0;
         let segmentRemboursable = dist;
@@ -262,7 +336,7 @@ const totalDistance = computed(() => {
         return sum + segmentRemboursable;
     }, 0);
 
-    return calculatedSum.toFixed(2);
+    return parseFloat(calculatedSum.toFixed(2));
 });
 
 const updateReturnSegment = () => {
@@ -345,6 +419,16 @@ const calcBtwToAddress = (index) => {
 };
 
 const submit = () => {
+    //if offline, save to queue and localStorage, then reset form
+    if (!isOnline.value) {
+        offlineQueue.value.push(form.data());
+        localStorage.setItem('offline_queue', JSON.stringify(offlineQueue.value));
+        alert("Mode hors-ligne : Mission enregistrée localement. Elle sera envoyée dès le retour d'internet.");
+        form.reset();
+        if (typeof window !== 'undefined') localStorage.removeItem('form_cache');
+        return;
+    }
+
     form.post(route('expenseReport.store'), {
         forceFormData: true,
         onSuccess: () => {
@@ -397,6 +481,17 @@ watch(addressWorkRef, (newVal) => {
     <div class="min-h-screen bg-gray-50 p-4 md:p-8 font-sans text-slate-900">
         <div class="max-w-2xl mx-auto">
             <Header :totalDistance="totalDistance"/>
+
+            <!-- Alerts online/offline -->
+            <div v-if="!isOnline" class="mb-4 bg-orange-100 border-l-4 border-orange-500 text-orange-700 p-4 rounded-xl flex items-center gap-3 animate-pulse">
+                <span class="font-bold">MODE HORS-LIGNE</span>
+                <span class="text-xs">Les missions seront envoyées automatiquement dès que vous aurez du réseau.</span>
+            </div>
+
+            <div v-if="offlineQueue.length > 0 && isOnline" class="mb-4 bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 rounded-xl flex items-center gap-2">
+                <span class="font-bold">Synchronisation en cours...</span>
+                <span class="text-xs ml-2">{{ offlineQueue.length }} mission(s) restante(s).</span>
+            </div>
 
             <div v-if="$page.props.auth.user.roles.includes('admin')" class="flex gap-2 mb-6">
                 <button @click="activeTab = 'mission'" :class="['px-4 py-2 rounded-xl font-bold shadow', activeTab === 'mission' ? 'bg-slate-900 text-white' : '']">Mission</button>
@@ -519,14 +614,16 @@ watch(addressWorkRef, (newVal) => {
                     <Recap
                         :realSumTotal="form.segments.reduce((sum, s) => sum + (parseFloat(s.distance) || 0), 0).toFixed(2)"
                         :homeWorkDistance="form.homeWorkDistance"
-                        :totalDistance="totalDistance"
+                        :totalDistance="totalDistance.toFixed(2)"
                         :form="form"
                     />
 
                     <button :disabled="form.processing"
                             type="submit"
                             class="w-full bg-slate-900 text-white py-5 rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-slate-300 hover:bg-black transition-all active:scale-[0.98] disabled:opacity-50">
-                        <span v-if="!form.processing" class="text-lg">Enregistrer la mission</span>
+                        <span v-if="!form.processing" class="text-lg">
+                            {{ isOnline ? 'Enregistrer la mission' : 'Mettre en file d’attente' }}
+                        </span>
                         <span v-else class="text-lg">Traitement...</span>
                     </button>
                 </form>
@@ -535,7 +632,6 @@ watch(addressWorkRef, (newVal) => {
             <div v-if="activeTab === 'admin'">
                 <UserManagement
                     :users="props.users"
-
                 />
             </div>
 
@@ -544,6 +640,7 @@ watch(addressWorkRef, (newVal) => {
 
     <p>{{ form }}</p>
 
+    <!-- MODIFIÉ : Retrait du :user="props.user" pour éviter l'erreur Extraneous non-props attributes -->
     <Menu
         v-model:km_rate="form.km_rate"
         v-model:first_name="form.firstName"
@@ -551,6 +648,5 @@ watch(addressWorkRef, (newVal) => {
         v-model:job="form.job"
         v-model:vehicle="form.vehicle"
         v-model:number_plate="form.numberPlate"
-        :user="props.user"
     />
 </template>

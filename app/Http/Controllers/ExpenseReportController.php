@@ -7,6 +7,7 @@ use App\Models\Segment;
 use App\Models\User;
 use App\Services\ExportService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB; // Ajouté pour la sécurité des transactions
 use Inertia\Inertia;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -16,9 +17,7 @@ class ExpenseReportController extends Controller
     public function index()
     {
         $user = auth()->user();
-
         $segments = Segment::where('user_id', $user->id)->get();
-
         $users = User::with('roles')->get();
 
         $expense_report = Expense_report::where('user_id', $user->id)
@@ -35,6 +34,7 @@ class ExpenseReportController extends Controller
 
     public function store(Request $request)
     {
+        // Validation
         $request->validate([
             'addressHome' => 'required',
             'firstName' => 'required|string',
@@ -47,8 +47,8 @@ class ExpenseReportController extends Controller
             'segments' => 'required|array',
             'segments.*.from_address.label' => 'required|string',
             'segments.*.to_address.label' => 'required|string',
-            'segments.*.departure_time' => 'required|date_format:H:i',
-            'segments.*.arrival_time' => 'required|date_format:H:i',
+            'segments.*.departure_time' => 'required',
+            'segments.*.arrival_time' => 'required',
             'segments.*.reason' => 'required|string',
             'segments.*.distance' => 'required|numeric',
             'segments.*.timeBtw' => 'required|numeric',
@@ -56,57 +56,73 @@ class ExpenseReportController extends Controller
         ]);
 
         $userId = auth()->id();
-        $dateInput = $request->input('date'); // Format YYYY-MM-DD
+        $dateInput = $request->input('date');
         $monthYear = date('m/Y', strtotime($dateInput));
 
-        $expenseReport = Expense_report::firstOrCreate(
-            [
-                'user_id' => $userId,
-                'month_year' => $monthYear,
-            ],
-            [
-                'date' => now(),
-                'status' => 'draft',
-                'address_work' => $request->input('addressWork')->label ?? 'Non renseigné',
-                'job' => $request->input('job') ?? 'Non renseigné',
-                'vehicle' => $request->input('vehicle') ?? 'Non renseigné',
-                'km_rate' => 0.42,
-                'total_km' => 50, // TODO: replace with actual total km after creating segments
-                'total_amount' => $request->input('total_km') * 0.42,
-                'number_plate' => $request->input('numberPlate') ?? 'Non renseigné',
-            ]
-        );
+        // Utilisation d'une transaction pour éviter les données partielles en cas de bug réseau
+        DB::transaction(function () use ($request, $userId, $monthYear) {
 
-        $segments = $request->input('segments');
-        foreach ($segments as $segment) {
-            Segment::create([
-                'user_id' => auth()->id(),
-                'date' => $request->input('date'), // TODO: Add date for ech segment if needed
-                'from_address' => $segment['from_address']['label'],
-                'to_address' => $segment['to_address']['label'],
-                'departure_time' => $segment['departure_time'],
-                'arrival_time' => $segment['arrival_time'],
-                'reason' => $segment['reason'],
-                'distance_km' => $segment['distance'],
-                'time_btw' => gmdate('H:i:s', (int) $segment['timeBtw']),
-                'type_doc' => $segment['typeDoc'],
-                'expense_report_id' => $expenseReport->id,
+            // Extraction propre des labels d'adresses (car ce sont des objets en JS)
+            $addressWorkData = $request->input('addressWork');
+            $workLabel = is_array($addressWorkData) ? ($addressWorkData['label'] ?? 'Non renseigné') : $addressWorkData;
+
+            $expenseReport = Expense_report::firstOrCreate(
+                [
+                    'user_id' => $userId,
+                    'month_year' => $monthYear,
+                ],
+                [
+                    'date' => now(),
+                    'status' => 'draft',
+                    'address_work' => $workLabel,
+                    'job' => $request->input('job'),
+                    'vehicle' => $request->input('vehicle'),
+                    'km_rate' => 0.4449, // Aligné avec votre JS
+                    'total_km' => 0,
+                    'total_amount' => 0,
+                    'number_plate' => $request->input('numberPlate'),
+                ]
+            );
+
+            $segments = $request->input('segments');
+            foreach ($segments as $segment) {
+                Segment::create([
+                    'user_id' => $userId,
+                    'date' => $request->input('date'),
+                    'from_address' => $segment['from_address']['label'],
+                    'to_address' => $segment['to_address']['label'],
+                    'departure_time' => $segment['departure_time'],
+                    'arrival_time' => $segment['arrival_time'],
+                    'reason' => $segment['reason'],
+                    'distance_km' => $segment['distance'],
+                    'time_btw' => gmdate('H:i:s', (int) $segment['timeBtw']),
+                    'type_doc' => $segment['typeDoc'],
+                    'expense_report_id' => $expenseReport->id,
+                ]);
+            }
+
+            // Mise à jour des infos utilisateur (on encode les adresses si ce sont des objets)
+            User::where('id', $userId)->update([
+                'first_name' => $request->input('firstName'),
+                'last_name' => $request->input('lastName'),
+                'address_home' => is_array($request->input('addressHome')) ? json_encode($request->input('addressHome')) : $request->input('addressHome'),
+                'address_work' => is_array($request->input('addressWork')) ? json_encode($request->input('addressWork')) : $request->input('addressWork'),
             ]);
+
+            // Recalcul des totaux
+            $totalKm = Segment::where('expense_report_id', $expenseReport->id)->sum('distance_km');
+            $expenseReport->update([
+                'total_km' => $totalKm,
+                'total_amount' => $totalKm * $expenseReport->km_rate,
+            ]);
+        });
+
+        // Pour gérer à la fois Inertia (form.post) et Axios (sync offline)
+        if ($request->wantsJson()) {
+            return response()->json(['message' => 'Rapport enregistré avec succès !'], 201);
         }
 
-        User::where('id', auth()->id())->update(['first_name' => $request->input('firstName'),
-            'last_name' => $request->input('lastName'),
-            'address_home' => $request->input('addressHome'),
-            'address_work' => $request->input('addressWork'),
-        ]);
-
-        $expenseReport->update([
-            'total_km' => Segment::where('expense_report_id', $expenseReport->id)->sum('distance_km'),
-            'total_amount' => Segment::where('expense_report_id', $expenseReport->id)->sum('distance_km') * $expenseReport->km_rate,
-        ]);
-
-        return redirect()->route('expenseReport.form')->with('success', 'Expense report created successfully!');
-
+        return redirect()->back()->with('success', 'Note de frais enregistrée, Mon Seigneur.');
     }
 
     public function export(ExportService $exportService): StreamedResponse
@@ -116,6 +132,6 @@ class ExpenseReportController extends Controller
 
         return response()->streamDownload(function () use ($writer) {
             $writer->save('php://output');
-        }, 'Note_de_frais_2025.xlsx');
+        }, 'Note_de_frais_2026.xlsx');
     }
 }

@@ -79,17 +79,24 @@ onUnmounted(() => {
 
 // Watch the query and fetch results from Nominatim API
 watch(query, async (value) => {
-  if (isSelecting.value) {
-    isSelecting.value = false;
-    return;
-  }
+    if (!isSelecting.value) {
+        address.value = {
+            ...address.value,
+            label: value
+        };
+        console.log("Mise à jour de l'adresse (saisie manuelle) :", address.value);
+    }
 
-  // Si on vide l'input, on vide l'objet adresse
-  if (!value) {
-    address.value = {};
-    results.value = [];
-    return;
-  }
+    if (isSelecting.value) {
+        isSelecting.value = false;
+        return;
+    }
+
+    if (!value) {
+        address.value = { label: '', lat: null, lon: null };
+        results.value = [];
+        return;
+    }
 
   clearTimeout(debounceTimeout);
   if (value.length < 3) return;
@@ -122,13 +129,16 @@ watch(query, async (value) => {
 
 // Sync the query string with the model value (for external changes)
 watch(() => address.value, (newVal) => {
-  if (newVal && typeof newVal === 'object') {
-    const newLabel = newVal.label || newVal.display_name || newVal.l || '';
-    if (newLabel !== query.value) {
-      isSelecting.value = true;
-      query.value = newLabel;
+    if (newVal && typeof newVal === 'object') {
+        const newLabel = newVal.label || newVal.display_name || newVal.l || '';
+        if (newLabel !== query.value) {
+            isSelecting.value = true;
+            query.value = newLabel;
+        }
+    } else if (!newVal || newVal === "") {
+
+        query.value = "";
     }
-  }
 }, {immediate: true, deep: true});
 </script>
 
