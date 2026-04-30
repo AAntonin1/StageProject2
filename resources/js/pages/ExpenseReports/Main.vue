@@ -1,14 +1,22 @@
 <script setup>
-import {useForm} from '@inertiajs/vue3';
-import { ref, computed, watch, onMounted, onUnmounted, defineAsyncComponent, provide } from 'vue';
-import { route } from 'ziggy-js';
+import { useForm } from '@inertiajs/vue3';
+import { ref, computed, onMounted, onUnmounted, defineAsyncComponent, provide } from 'vue';
 import { usePage } from '@inertiajs/vue3';
-import axios from 'axios'; // Importé pour la synchronisation en arrière-plan
 
+// Composables
+import { useOfflineQueue } from '@/composables/useOfflineQueue';
+import { useAddresses } from '@/composables/useAddresses';
+import { useSegmentHelpers } from '@/composables/useSegmentHelpers';
+import { useDistanceCalculation } from '@/composables/useDistanceCalculation';
+import { useFormInitialization } from '@/composables/useFormInitialization';
+import { useFormWatchers } from '@/composables/useFormWatchers';
+
+// Async Components
 const AddressAutocomplete = defineAsyncComponent(() => import('@/components/ExpenseReports/AddressAutocomplete.vue'));
 const Recap = defineAsyncComponent(() => import('@/components/ExpenseReports/Recap.vue'));
 const Menu = defineAsyncComponent(() => import('@/components/ExpenseReports/Menu.vue'));
 
+// Sync Components
 import UserManagement from '@/pages/Admin/UserManagement.vue';
 import ButtonAddStep from "@/components/ExpenseReports/ButtonAddStep.vue";
 import ButtonToggleReturnTrip from "@/components/ExpenseReports/ButtonToggleReturnTrip.vue";
@@ -21,57 +29,28 @@ import ButtonWorkAddress from "@/components/ExpenseReports/ButtonWorkAddress.vue
 import SelectTypeDoc from "@/components/ExpenseReports/SelectTypeDoc.vue";
 import ReasonDeplacement from "@/components/ExpenseReports/ReasonDeplacement.vue";
 
+// Initialize composables
+const { isOnline, offlineQueue, processQueue, initOfflineHandling, cleanupOfflineHandling } = useOfflineQueue();
+const { addressHomeRef, addressWorkRef, updateAddressHome, initAddressesFromStorage, setupAddressWatchers } = useAddresses();
+const { createDefaultSegment, createReturnSegment, toTimeStamp, getReturnSegmentIndex } = useSegmentHelpers();
+const { fetchDistanceFromOSRM, calculateTotalDistance } = useDistanceCalculation();
+const { initFormFromProps, initHomeWorkDistance } = useFormInitialization();
+const { setupFormWatchers, handleFormSubmit } = useFormWatchers();
+
 const page = usePage();
 
 const props = defineProps({
-    user : Object,
-    segments : Array,
-    expense_report : Object,
-    users : Array
+    user: Object,
+    segments: Array,
+    expense_report: Object,
+    users: Array
 });
 
 const activeTab = ref('mission');
-
-
-const isOnline = ref(navigator.onLine);
-const offlineQueue = ref([]);
-let checkConnInterval = null;
-
-const addressHomeRef = ref({
-    lat: null,
-    lon: null,
-    label: ''
-});
-
-const addressWorkRef = ref({
-    lat: null,
-    lon: null,
-    label: ''
-});
-
-const updateAddressHome = (newAddress) => {
-    if (newAddress && newAddress.label && typeof newAddress.label === 'object') {
-        addressHomeRef.value = { ...newAddress.label };
-    } else {
-        addressHomeRef.value = newAddress;
-    }
-
-    if (typeof window !== 'undefined') {
-        localStorage.setItem('home_address', JSON.stringify(addressHomeRef.value));
-    }
-};
-
-provide('dataHomeAddress', {
-    addressHomeRef,
-    updateAddressHome
-});
-
-provide('dataWorkAddress', {
-    addressWorkRef
-});
-
 const homeWorkDistance = ref(0);
+let debounceTimeout = null;
 
+// Form initialization
 const form = useForm({
     label: '',
     date: new Date().toISOString().split('T')[0],
@@ -79,22 +58,14 @@ const form = useForm({
     km_rate: 0.4449,
     firstName: '',
     lastName: '',
-    addressHome: {
-        lat: null,
-        lon: null,
-        label: ''
-    },
+    addressHome: { lat: null, lon: null, label: '' },
     homeWorkDistance: homeWorkDistance.value,
-    numAccount : '',
-    placeBusiness : '',
-    job : '',
-    vehicle : '',
-    numberPlate : '',
-    addressWork : {
-        lat: null,
-        lon: null,
-        label: ''
-    },
+    numAccount: '',
+    placeBusiness: '',
+    job: '',
+    vehicle: '',
+    numberPlate: '',
+    addressWork: { lat: null, lon: null, label: '' },
     segments: [
         {
             id: crypto.randomUUID(),
@@ -111,140 +82,20 @@ const form = useForm({
     ],
 });
 
-// Handle online event to process the queue when the user comes back online
-const handleOnline = async () => {
-    try {
-        await fetch('/favicon.ico', {
-            method: 'HEAD',
-            mode: 'no-cors',
-            cache: 'no-store'
-        });
-
-        if (!isOnline.value) {
-            console.log('Connecté !');
-            isOnline.value = true;
-            processQueue(); // On relance la file d'attente
-        }
-    } catch (error) {
-        if (isOnline.value) {
-            console.log('Hors-ligne détecté (réel)');
-            isOnline.value = false;
-        }
-    }
-};
-
-const processQueue = async () => {
-    if (offlineQueue.value.length === 0) return;
-
-    const queue = [...offlineQueue.value];
-    for (const data of queue) {
-        try {
-
-            await axios.post(route('expenseReport.store'), data, {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                }
-            });
-
-            offlineQueue.value = offlineQueue.value.filter(item => item !== data);
-            localStorage.setItem('offline_queue', JSON.stringify(offlineQueue.value));
-        } catch (error) {
-
-            if (error.response && error.response.status === 422) {
-                console.error("Erreur de validation Laravel :", error.response.data.errors);
-            } else {
-                console.error("Échec de la synchro :", error);
-            }
-            break;
-        }
-    }
-};
-
-onMounted(() => {
-    if (typeof window !== 'undefined') {
-        // Load offline queue from localStorage (Ajouté)
-        const savedQueue = localStorage.getItem('offline_queue');
-        if (savedQueue) offlineQueue.value = JSON.parse(savedQueue);
-
-        checkConnInterval = setInterval(handleOnline, 5000);
-
-        //Event listenrs for online/offline
-        window.addEventListener('online', handleOnline);
-        window.addEventListener('offline', () => isOnline.value = false);
-
-        const savedHome = localStorage.getItem('home_address');
-        if (savedHome) {
-            const parsedHome = JSON.parse(savedHome);
-            const cleanHome = (parsedHome.label && typeof parsedHome.label === 'object') ? parsedHome.label : parsedHome;
-            addressHomeRef.value = cleanHome;
-            form.addressHome = cleanHome;
-        } else if (props.user.address_home) {
-            const homeData = typeof props.user.address_home === 'string'
-                ? { label: props.user.address_home, lat: null, lon: null }
-                : props.user.address_home;
-            addressHomeRef.value = homeData;
-            form.addressHome = homeData;
-        }
-
-        const savedWork = localStorage.getItem('work_address');
-        if (savedWork) {
-            const parsedWork = JSON.parse(savedWork);
-            const cleanWork = (parsedWork.label && typeof parsedWork.label === 'object') ? parsedWork.label : parsedWork;
-            addressWorkRef.value = cleanWork;
-            form.addressWork = cleanWork;
-        } else if (props.user.address_work) {
-            const workData = typeof props.user.address_work === 'string'
-                ? { label: props.user.address_work, lat: null, lon: null }
-                : props.user.address_work;
-            addressWorkRef.value = workData;
-            form.addressWork = workData;
-        }
-
-        const savedDist = localStorage.getItem('home_work_dist');
-        if (savedDist) {
-            homeWorkDistance.value = parseFloat(savedDist);
-            form.homeWorkDistance = parseFloat(savedDist);
-        }
-
-        const savedForm = localStorage.getItem('form_cache');
-        if (savedForm) {
-            Object.assign(form, JSON.parse(savedForm));
-        }
-
-        if (!form.firstName) form.firstName = props.user.first_name || '';
-        if (!form.lastName) form.lastName = props.user.last_name || '';
-        if (!form.job) form.job = props.expense_report.job || '';
-        if (!form.vehicle) form.vehicle = props.expense_report.vehicle || '';
-        if (!form.numberPlate) form.numberPlate = props.expense_report.number_plate || '';
-        if (!form.placeBusiness) form.placeBusiness = props.expense_report.address_work || '';
-
-        // Check initial si on peut synchroniser (Ajouté)
-        if (isOnline.value) processQueue();
-    }
+// Provide addresses to child components
+provide('dataHomeAddress', {
+    addressHomeRef,
+    updateAddressHome
 });
 
-// Delete event listeners on unmount to prevent memory leaks
-onUnmounted(() => {
-    clearInterval(checkConnInterval); // Nettoyage de l'intervalle
-    window.removeEventListener('online', handleOnline);
-    window.removeEventListener('offline', () => isOnline.value = false);
+provide('dataWorkAddress', {
+    addressWorkRef
 });
 
-let debounceTimeout = null;
-
+// Segment management
 const addStep = () => {
     const lastSegment = form.segments[form.segments.length - 1];
-    form.segments.push({
-        id: crypto.randomUUID(),
-        from_address: lastSegment ? { ...lastSegment.to_address } : { label: '', lat: null, lon: null },
-        to_address: '',
-        departure_time: lastSegment ? lastSegment.arrival_time : '',
-        arrival_time: '',
-        reason: '',
-        distance: 0,
-        typeDoc: 'EAM'
-    });
+    form.segments.push(createDefaultSegment(lastSegment));
 };
 
 const removeStep = async (index) => {
@@ -255,22 +106,7 @@ const removeStep = async (index) => {
     }
 };
 
-const fetchDistanceFromOSRM = async (start, end) => {
-    if (!isOnline.value) return 0;
-
-    const coords = `${start.lon},${start.lat};${end.lon},${end.lat}`;
-    try {
-        const response = await fetch(`https://router.project-osrm.org/route/v1/driving/${coords}?overview=false`);
-        const data = await response.json();
-        if (data.routes && data.routes.length > 0) {
-            return (data.routes[0].distance / 1000);
-        }
-    } catch (error) {
-        console.error('Erreur lors de la récupération de la distance :', error);
-    }
-    return 0;
-};
-
+// Distance calculations
 const updateDistances = async () => {
     if (debounceTimeout) clearTimeout(debounceTimeout);
 
@@ -280,7 +116,7 @@ const updateDistances = async () => {
             const end = segment.to_address;
 
             if (start?.lat && start?.lon && end?.lat && end?.lon) {
-                const dist = await fetchDistanceFromOSRM(start, end);
+                const dist = await fetchDistanceFromOSRM(start, end, isOnline.value);
                 segment.distance = dist.toFixed(2);
                 if (!segment.manualArrivalTime) calcBtwToAddress(form.segments.indexOf(segment));
             } else {
@@ -292,8 +128,9 @@ const updateDistances = async () => {
     }, 500);
 };
 
+// Return trip management
 const toggleReturnTrip = () => {
-    const returnIndex = form.segments.findIndex(s => s.reason === 'Retour au siège / domicile');
+    const returnIndex = getReturnSegmentIndex(form.segments);
 
     if (returnIndex !== -1) {
         form.segments.splice(returnIndex, 1);
@@ -302,66 +139,43 @@ const toggleReturnTrip = () => {
         const lastSegment = form.segments[form.segments.length - 1];
 
         if (firstSegment?.from_address && lastSegment?.to_address) {
-            form.segments.push({
-                id: crypto.randomUUID(),
-                from_address: {...lastSegment.to_address},
-                to_address: {...firstSegment.from_address},
-                departure_time: lastSegment.arrival_time || '',
-                arrival_time: '',
-                reason: 'Retour au siège / domicile',
-                distance: 0
-            });
+            form.segments.push(createReturnSegment(lastSegment, firstSegment));
             updateDistances();
         }
     }
 };
 
 const hasReturnTrip = computed(() => {
-    return form.segments.some(s => s.reason === 'Retour au siège / domicile');
+    return getReturnSegmentIndex(form.segments) !== -1;
 });
 
+// Computed properties
 const totalDistance = computed(() => {
-    const hwDist = parseFloat(form.homeWorkDistance) || 0;
-
-    const calculatedSum = form.segments.reduce((sum, segment, index) => {
-        const dist = parseFloat(segment.distance) || 0;
-        let segmentRemboursable = dist;
-
-        if (index === 0) {
-            segmentRemboursable = Math.max(0, dist - hwDist);
-        } else if (index === form.segments.length - 1) {
-            segmentRemboursable = Math.max(0, dist - hwDist);
-        }
-
-        return sum + segmentRemboursable;
-    }, 0);
-
-    return parseFloat(calculatedSum.toFixed(2));
+    return calculateTotalDistance(form.segments, form.homeWorkDistance);
 });
 
 const updateReturnSegment = () => {
     const firstSegment = form.segments[0];
     const lastSegment = form.segments[form.segments.length - 1];
-
-    const returnIndex = form.segments.findIndex(s => s.reason === 'Retour au siège / domicile');
+    const returnIndex = getReturnSegmentIndex(form.segments);
 
     if (returnIndex !== -1 && firstSegment && lastSegment) {
         const returnSegment = form.segments[returnIndex];
         const previousToReturn = form.segments[returnIndex - 1];
 
         if (previousToReturn) {
-            returnSegment.from_address = {...previousToReturn.to_address};
-            returnSegment.to_address = {...firstSegment.from_address};
+            returnSegment.from_address = { ...previousToReturn.to_address };
+            returnSegment.to_address = { ...firstSegment.from_address };
             returnSegment.departure_time = previousToReturn.arrival_time || '';
-
             updateDistances();
         }
     }
 };
 
+// Address management
 const addAddressButtonToSegment = (index, field, type) => {
-    if(type === 'work') {
-        if(!addressWorkRef.value?.lat) {
+    if (type === 'work') {
+        if (!addressWorkRef.value?.lat) {
             alert("Veuillez configurer votre adresse travail dans les paramètres (bouton en haut à droite).");
             return;
         }
@@ -369,7 +183,8 @@ const addAddressButtonToSegment = (index, field, type) => {
             label: addressWorkRef.value.label,
             lat: addressWorkRef.value.lat,
             lon: addressWorkRef.value.lon
-        }} else if(type === 'home') {
+        };
+    } else if (type === 'home') {
         if (addressHomeRef.value?.lat) {
             form.segments[index][field] = {
                 label: addressHomeRef.value.label,
@@ -395,12 +210,7 @@ const swapAddresses = (index) => {
     updateDistances();
 };
 
-const toTimeStamp = (timeStr) => {
-    if (!timeStr) return 0;
-    const [hours, minutes] = timeStr.split(':').map(Number);
-    return hours * 3600 + minutes * 60;
-};
-
+// Time calculations
 const calcBtwToAddress = (index) => {
     const segment = form.segments[index];
     if (!segment) return;
@@ -418,61 +228,25 @@ const calcBtwToAddress = (index) => {
     }
 };
 
+// Form submission
 const submit = () => {
-    //if offline, save to queue and localStorage, then reset form
-    if (!isOnline.value) {
-        offlineQueue.value.push(form.data());
-        localStorage.setItem('offline_queue', JSON.stringify(offlineQueue.value));
-        alert("Mode hors-ligne : Mission enregistrée localement. Elle sera envoyée dès le retour d'internet.");
-        form.reset();
-        if (typeof window !== 'undefined') localStorage.removeItem('form_cache');
-        return;
-    }
-
-    form.post(route('expenseReport.store'), {
-        forceFormData: true,
-        onSuccess: () => {
-            form.reset();
-            if (typeof window !== 'undefined') localStorage.removeItem('form_cache');
-        },
-        onError: (errors) => {
-            console.error("Erreur lors de l'envoi :", errors);
-        },
-    });
+    handleFormSubmit(form, isOnline.value, offlineQueue.value);
 };
 
-watch(() => form.homeWorkDistance, (newValue) => {
-    if (typeof window !== 'undefined') {
-        localStorage.setItem('home_work_dist', newValue);
-    }
+// Lifecycle
+onMounted(() => {
+    initOfflineHandling();
+    initAddressesFromStorage(props.user);
+    homeWorkDistance.value = initHomeWorkDistance(homeWorkDistance.value);
+    form.homeWorkDistance = homeWorkDistance.value;
+    initFormFromProps(form, props.user, props.expense_report);
+    setupFormWatchers(form, homeWorkDistance, updateDistances);
+    setupAddressWatchers(form);
 });
 
-watch(
-    () => form.data(),
-    (formData) => {
-        if (typeof window !== 'undefined') {
-            localStorage.setItem('form_cache', JSON.stringify(formData));
-            updateDistances();
-        }
-    },
-    {deep: true},
-);
-
-watch(addressHomeRef, (newVal) => {
-    if (typeof window !== 'undefined' && newVal) {
-        const clean = (newVal.label && typeof newVal.label === 'object') ? { ...newVal.label } : newVal;
-        localStorage.setItem('home_address', JSON.stringify(clean));
-        form.addressHome = { ...clean };
-    }
-}, { deep: true });
-
-watch(addressWorkRef, (newVal) => {
-    if (typeof window !== 'undefined' && newVal) {
-        const clean = (newVal.label && typeof newVal.label === 'object') ? { ...newVal.label } : newVal;
-        localStorage.setItem('work_address', JSON.stringify(clean));
-        form.addressWork = { ...clean };
-    }
-}, { deep: true });
+onUnmounted(() => {
+    cleanupOfflineHandling();
+});
 
 
 </script>
@@ -640,7 +414,6 @@ watch(addressWorkRef, (newVal) => {
 
     <p>{{ form }}</p>
 
-    <!-- MODIFIÉ : Retrait du :user="props.user" pour éviter l'erreur Extraneous non-props attributes -->
     <Menu
         v-model:km_rate="form.km_rate"
         v-model:first_name="form.firstName"
