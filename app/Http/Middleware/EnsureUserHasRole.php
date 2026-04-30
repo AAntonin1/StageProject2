@@ -16,7 +16,7 @@ class EnsureUserHasRole
     public function handle(Request $request, Closure $next, $role): Response
     {
         if (!$request->user() || !$request->user()->hasRole($role)) {
-            return redirect()->route('home')->with('error', 'You do not have the required role to access this page.');
+            return redirect()->route('expenseReport.form')->with('error', 'You do not have the required role to access this page.');
         }
         return $next($request);
     }

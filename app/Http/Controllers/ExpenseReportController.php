@@ -24,6 +24,7 @@ class ExpenseReportController extends Controller
             ->where('month_year', date('m/Y'))
             ->first();
 
+
         return Inertia::render('ExpenseReports/Main', [
             'segments' => $segments,
             'user' => $user,

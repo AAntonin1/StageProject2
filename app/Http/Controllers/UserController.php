@@ -42,29 +42,25 @@ class UserController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'username' => 'required|string|unique:users,user_name',
-            'password' => 'required|string',
             'first_name' => 'required|string',
             'last_name' => 'required|string',
-            'email' => 'required|string|email|unique:users',
+            'email' => 'required|email|unique:users',
+            'password' => 'required|string|min:6',
             'role' => 'required|string',
         ]);
 
         $user = User::create([
-            'user_name' => $request->input('username'),
-            'password' => $request->input('password'),
             'first_name' => $request->input('first_name'),
             'last_name' => $request->input('last_name'),
             'email' => $request->input('email'),
+            'password' => $request->input('password'),
             'name' => $request->input('first_name').' '.$request->input('last_name'),
+            'user_name' => $request->input('email'), // Utiliser l'email comme user_name par défaut
         ]);
 
-        // Put role user
-        $role = $request->input('role');
-        $user->assignRole($role);
+        $user->assignRole($request->input('role'));
 
-
-        return redirect()->back()->with('success', 'Expense report added successfully!');
+        return redirect()->route('users.index')->with('success', 'User created successfully!');
     }
 
     public function destroy($id)
@@ -73,5 +69,52 @@ class UserController extends Controller
         $user->delete();
 
         return redirect()->back()->with('success', 'User deleted successfully!');
+    }
+
+    public function edit($id)
+    {
+        $user = User::with('roles')->findOrFail($id);
+
+        return Inertia::render('Admin/UserManagement', [
+            'user' => $user,
+            'users' => User::with('roles')->get(),
+        ]);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $user = User::findOrFail($id);
+
+        $request->validate([
+            'first_name' => 'required|string',
+            'last_name' => 'required|string',
+            'email' => 'required|email|unique:users,email,'.$id,
+            'password' => 'nullable|string|min:6',
+            'role' => 'required|string',
+        ]);
+
+        $user->update([
+            'first_name' => $request->input('first_name'),
+            'last_name' => $request->input('last_name'),
+            'email' => $request->input('email'),
+            'name' => $request->input('first_name').' '.$request->input('last_name'),
+        ]);
+
+        if ($request->filled('password')) {
+            $user->update(['password' => $request->input('password')]);
+        }
+
+        $user->syncRoles($request->input('role'));
+
+        return redirect()->back()->with('success', 'User updated successfully!');
+    }
+
+    public function index()
+    {
+        $users = User::with('roles')->get();
+
+        return Inertia::render('Admin/UserManagement', [
+            'users' => $users,
+        ]);
     }
 }

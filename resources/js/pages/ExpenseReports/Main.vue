@@ -1,5 +1,5 @@
 <script setup>
-import { useForm } from '@inertiajs/vue3';
+import { Link, useForm } from '@inertiajs/vue3';
 import { ref, computed, onMounted, onUnmounted, defineAsyncComponent, provide } from 'vue';
 import { usePage } from '@inertiajs/vue3';
 
@@ -17,7 +17,6 @@ const Recap = defineAsyncComponent(() => import('@/components/ExpenseReports/Rec
 const Menu = defineAsyncComponent(() => import('@/components/ExpenseReports/Menu.vue'));
 
 // Sync Components
-import UserManagement from '@/pages/Admin/UserManagement.vue';
 import ButtonAddStep from "@/components/ExpenseReports/ButtonAddStep.vue";
 import ButtonToggleReturnTrip from "@/components/ExpenseReports/ButtonToggleReturnTrip.vue";
 import Header from "@/components/ExpenseReports/Header.vue";
@@ -28,6 +27,7 @@ import ButtonHomeAddress from "@/components/ExpenseReports/ButtonHomeAddress.vue
 import ButtonWorkAddress from "@/components/ExpenseReports/ButtonWorkAddress.vue";
 import SelectTypeDoc from "@/components/ExpenseReports/SelectTypeDoc.vue";
 import ReasonDeplacement from "@/components/ExpenseReports/ReasonDeplacement.vue";
+import { route } from 'ziggy-js';
 
 // Initialize composables
 const { isOnline, offlineQueue, processQueue, initOfflineHandling, cleanupOfflineHandling } = useOfflineQueue();
@@ -43,10 +43,8 @@ const props = defineProps({
     user: Object,
     segments: Array,
     expense_report: Object,
-    users: Array
 });
 
-const activeTab = ref('mission');
 const homeWorkDistance = ref(0);
 let debounceTimeout = null;
 
@@ -273,11 +271,14 @@ onUnmounted(() => {
             </div>
 
             <div v-if="$page.props.auth.user.roles.includes('admin')" class="flex gap-2 mb-6">
-                <button @click="activeTab = 'mission'" :class="['px-4 py-2 rounded-xl font-bold shadow', activeTab === 'mission' ? 'bg-slate-900 text-white' : '']">Mission</button>
-                <button @click="activeTab = 'admin'" :class="['px-4 py-2 rounded-xl font-bold shadow', activeTab === 'admin' ? 'bg-slate-900 text-white' : '']">Admin</button>
+                <Link
+                    :href="route('users.index')"
+                    class="px-4 py-2 rounded-xl font-bold shadow bg-white text-slate-600 hover:bg-slate-100 transition-all inline-block">
+                    Admin
+                </Link>
             </div>
 
-            <div v-if="activeTab === 'mission'">
+            <div>
                 <PersonalInformation
                     v-model:first_name="form.firstName"
                     v-model:last_name="form.lastName"
@@ -408,12 +409,6 @@ onUnmounted(() => {
                         <span v-else class="text-lg">Traitement...</span>
                     </button>
                 </form>
-            </div>
-
-            <div v-if="activeTab === 'admin'">
-                <UserManagement
-                    :users="props.users"
-                />
             </div>
 
         </div>
