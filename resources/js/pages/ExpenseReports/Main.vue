@@ -14,14 +14,12 @@ import { useFormWatchers } from '@/composables/useFormWatchers';
 // Async Components
 const AddressAutocomplete = defineAsyncComponent(() => import('@/components/ExpenseReports/AddressAutocomplete.vue'));
 const Recap = defineAsyncComponent(() => import('@/components/ExpenseReports/Recap.vue'));
-const Menu = defineAsyncComponent(() => import('@/components/ExpenseReports/Menu.vue'));
 
 // Sync Components
 import ButtonAddStep from "@/components/ExpenseReports/ButtonAddStep.vue";
 import ButtonToggleReturnTrip from "@/components/ExpenseReports/ButtonToggleReturnTrip.vue";
 import Header from "@/components/ExpenseReports/Header.vue";
 import PersonalInformation from "@/components/ExpenseReports/PersonalInformation.vue";
-import HomeWorkDistance from "@/components/ExpenseReports/HomeWorkDistance.vue";
 import ButtonSwapAddress from "@/components/ExpenseReports/ButtonSwapAddress.vue";
 import ButtonHomeAddress from "@/components/ExpenseReports/ButtonHomeAddress.vue";
 import ButtonWorkAddress from "@/components/ExpenseReports/ButtonWorkAddress.vue";
@@ -304,8 +302,13 @@ onUnmounted(() => {
                 <span class="text-xs ml-2">{{ offlineQueue.length }} mission(s) restante(s).</span>
             </div>
 
-            <div v-if="$page.props.auth.user.roles.includes('admin')" class="flex gap-2 mb-6">
+            <div class="flex gap-2 mb-6">
                 <Link
+                    :href="route('user.profile')"
+                    class="px-4 py-2 rounded-xl font-bold shadow bg-white text-slate-600 hover:bg-slate-100 transition-all inline-block">
+                    Profile
+                </Link>
+                <Link v-if="$page.props.auth.user.roles.includes('admin')"
                     :href="route('users.index')"
                     class="px-4 py-2 rounded-xl font-bold shadow bg-white text-slate-600 hover:bg-slate-100 transition-all inline-block">
                     Admin
@@ -455,15 +458,4 @@ onUnmounted(() => {
 
         </div>
     </div>
-
-    <p>{{ form }}</p>
-
-    <Menu
-        v-model:km_rate="form.km_rate"
-        v-model:first_name="form.firstName"
-        v-model:last_name="form.lastName"
-        v-model:job="form.job"
-        v-model:vehicle="form.vehicle"
-        v-model:number_plate="form.numberPlate"
-    />
 </template>

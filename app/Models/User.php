@@ -31,6 +31,9 @@ class User extends Authenticatable
         'user_name',
         'email',
         'password',
+        'address_home',
+        'address_work',
+        'home_work_distance',
     ];
 
     protected $casts = [

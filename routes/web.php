@@ -10,12 +10,14 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/form', [ExpenseReportController::class, 'index'])->name('expenseReport.form');
 });
 
-//Users
+// Users
 Route::get('/', [UserController::class, 'login'])->name('login');
 Route::post('/checkUser', [UserController::class, 'checkLogin'])->name('user.login');
 Route::post('/logout', [UserController::class, 'logout'])->name('user.logout');
+Route::get('/profile', [UserController::class, 'profile'])->name('user.profile');
+Route::put('/profile', [UserController::class, 'updateProfile'])->name('user.profile.update');
 
-// Routes d'administration des utilisateurs (protégées par auth + admin)
+// Admin routes
 Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/dashboard', [UserController::class, 'index'])->name('dashboard');
     Route::get('/users', [UserController::class, 'index'])->name('users.index');
@@ -25,6 +27,6 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::delete('/users/{id}', [UserController::class, 'destroy'])->name('users.destroy');
 });
 
-// Uniquement pour le développement
+// Only for development testing, to be removed in production
 Route::get('/test-export', [App\Http\Controllers\ExpenseReportController::class, 'export']);
 require __DIR__.'/settings.php';

@@ -86,7 +86,6 @@ watch(query, async (value) => {
             ...address.value,
             label: value
         };
-        console.log("Mise à jour de l'adresse (saisie manuelle) :", address.value);
     }
 
     if (isSelecting.value) {
