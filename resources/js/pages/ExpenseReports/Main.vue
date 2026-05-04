@@ -353,7 +353,7 @@ onUnmounted(() => {
                                         placeholder="Lieu de départ"
                                         labelName="Lieu de départ"
                                         class="flex-1"
-                                        required />
+                                        :required="true" />
 
                                     <ButtonHomeAddress
                                         @add-address-button-to-segment="addAddressButtonToSegment(index, 'from_address', 'home')"/>
@@ -364,7 +364,9 @@ onUnmounted(() => {
                                     <div class="flex flex-col gap-1">
                                         <label :for="'departure_time_' + index" class="text-[10px] font-black uppercase text-slate-600">Départ</label>
                                         <input type="time" v-model="segment.departure_time" lang="fr-FR" :id="'departure_time_' + index"
-                                               class="p-3 w-24 bg-slate-100 border-none rounded-xl text-xs font-bold text-slate-600 focus:ring-2 focus:ring-slate-900"/>
+                                               class="p-3 w-24 bg-slate-100 border-none rounded-xl text-xs font-bold text-slate-600 focus:ring-2 focus:ring-slate-900"
+                                               required
+                                        />
                                     </div>
                                 </div>
                             </div>
@@ -381,7 +383,7 @@ onUnmounted(() => {
                                         placeholder="Lieu d'arrivée"
                                         labelName="Lieu d'arrivée"
                                         class="flex-1"
-                                        required
+                                        :required="true"
                                     />
 
                                     <ButtonHomeAddress
@@ -393,7 +395,9 @@ onUnmounted(() => {
                                     <div class="flex flex-col gap-1">
                                         <label :for="'arrival_time_' + index" class="text-[10px] font-black uppercase text-slate-600">Arrivée</label>
                                         <input type="time" v-model="segment.arrival_time" lang="fr-FR" :id="'arrival_time_' + index"
-                                               class="p-3 w-24 bg-slate-100 border-none rounded-xl text-xs font-bold text-slate-600 focus:ring-2 focus:ring-slate-900 "/>
+                                               class="p-3 w-24 bg-slate-100 border-none rounded-xl text-xs font-bold text-slate-600 focus:ring-2 focus:ring-slate-900 "
+                                               required
+                                        />
                                     </div>
                                 </div>
                             </div>
@@ -412,11 +416,16 @@ onUnmounted(() => {
                                         @click="segment.isManualUpdateKM = true"
                                         id="distance"
                                         type="text" v-model="segment.distance"
-                                        class="text-right w-20 p-3 text-sm font-bold bg-blue-100 text-blue-800 px-3 rounded-lg border border-blue-200"/>
+                                        class="text-right w-20 p-3 text-sm font-bold bg-blue-100 text-blue-800 px-3 rounded-lg border border-blue-200"
+                                        required
+
+                                    />
                                 </div>
                             </div>
 
-                            <SelectTypeDoc v-model:typeDoc="segment.typeDoc" />
+                            <SelectTypeDoc
+                                v-model:typeDoc="segment.typeDoc"
+                                :required="true"/>
                         </div>
                     </div>
 

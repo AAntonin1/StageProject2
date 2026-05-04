@@ -2,9 +2,11 @@
 import {inject, onMounted, onUnmounted, ref, watch} from 'vue';
 
 const props = defineProps({
-  placeholder: String,
-  workAddress: Object,
-  labelName: String
+    placeholder: String,
+    workAddress: Object,
+    labelName: String,
+    required : Boolean,
+
 });
 
 const address = defineModel('address');
@@ -152,6 +154,7 @@ watch(() => address.value, (newVal) => {
         class="w-full bg-slate-100 border-none rounded-xl text-sm font-bold text-slate-600 focus:ring-2 focus:ring-slate-900 p-3"
         @focus="showResults = true"
         @blur="closeResults"
+        :required="props.required"
     />
     <ul
         v-if="showResults && results.length"
