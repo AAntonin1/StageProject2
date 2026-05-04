@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, inject } from 'vue';
 import AddressAutocomplete from '@/components/ExpenseReports/AddressAutocomplete.vue';
 
 const props = defineProps({
@@ -9,11 +9,13 @@ const props = defineProps({
 
 const firstName = defineModel('first_name');
 const lastName = defineModel('last_name');
-const address = defineModel('address');
-const placeBusiness = defineModel('place_business');
 const job = defineModel('job');
 const vehicle = defineModel('vehicle');
 const numberPlate = defineModel('number_plate');
+
+
+const { addressHomeRef } = inject('dataHomeAddress');
+const { addressWorkRef } = inject('dataWorkAddress');
 
 //Check if any of the required fields are missing
 const isMissingData = computed(() => {
@@ -52,7 +54,7 @@ const isMissingData = computed(() => {
             </div>
             <div class="col-span-2">
                 <label class="text-[10px] font-black uppercase text-slate-600 block mb-1 ml-1">Adresse Domicile</label>
-                <AddressAutocomplete v-model:address="address" placeholder="Votre adresse de domicile" />
+                <AddressAutocomplete v-model:address="addressHomeRef" placeholder="Votre adresse de domicile" />
             </div>
         </div>
     </div>
@@ -62,7 +64,7 @@ const isMissingData = computed(() => {
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
                 <label class="text-[10px] font-black uppercase text-slate-600 block mb-1 ml-1">Lieu de travail</label>
-                <AddressAutocomplete v-model:address="placeBusiness" placeholder="Votre adresse travail" />
+                <AddressAutocomplete v-model:address="addressWorkRef" placeholder="Votre adresse travail" />
             </div>
             <div>
                 <label class="text-[10px] font-black uppercase text-slate-600 block mb-1 ml-1">Profession</label>

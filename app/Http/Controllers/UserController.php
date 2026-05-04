@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
 
 class UserController extends Controller
@@ -45,6 +46,7 @@ class UserController extends Controller
             'first_name' => 'required|string',
             'last_name' => 'required|string',
             'email' => 'required|email|unique:users',
+            'user_name' => 'required|string|unique:users',
             'password' => 'required|string|min:6',
             'role' => 'required|string',
         ]);
@@ -53,9 +55,9 @@ class UserController extends Controller
             'first_name' => $request->input('first_name'),
             'last_name' => $request->input('last_name'),
             'email' => $request->input('email'),
-            'password' => $request->input('password'),
+            'user_name' => $request->input('user_name'),
+            'password' => Hash::make($request->input('password')),
             'name' => $request->input('first_name').' '.$request->input('last_name'),
-            'user_name' => $request->input('email'), // Utiliser l'email comme user_name par défaut
         ]);
 
         $user->assignRole($request->input('role'));
@@ -85,25 +87,30 @@ class UserController extends Controller
     {
         $user = User::findOrFail($id);
 
-        $request->validate([
+        $rules = [
             'first_name' => 'required|string',
             'last_name' => 'required|string',
             'email' => 'required|email|unique:users,email,'.$id,
+            'user_name' => 'required|string|unique:users,user_name,'.$id,
             'password' => 'nullable|string|min:6',
             'role' => 'required|string',
-        ]);
+        ];
 
-        $user->update([
+        $request->validate($rules);
+
+        $updateData = [
             'first_name' => $request->input('first_name'),
             'last_name' => $request->input('last_name'),
             'email' => $request->input('email'),
+            'user_name' => $request->input('user_name'),
             'name' => $request->input('first_name').' '.$request->input('last_name'),
-        ]);
+        ];
 
         if ($request->filled('password')) {
-            $user->update(['password' => $request->input('password')]);
+            $updateData['password'] = Hash::make($request->input('password'));
         }
 
+        $user->update($updateData);
         $user->syncRoles($request->input('role'));
 
         return redirect()->back()->with('success', 'User updated successfully!');

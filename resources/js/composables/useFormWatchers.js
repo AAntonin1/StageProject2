@@ -1,5 +1,6 @@
 import { watch } from 'vue';
 import { route } from 'ziggy-js';
+import { useDistanceCalculation } from './useDistanceCalculation';
 
 export function useFormWatchers() {
     const setupFormWatchers = (form, homeWorkDistance, updateDistances) => {
@@ -23,7 +24,18 @@ export function useFormWatchers() {
         );
     };
 
-    const handleFormSubmit = (form, isOnline, offlineQueue) => {
+    const handleFormSubmit = async (form, isOnline, offlineQueue, addressHomeRef, addressWorkRef, homeWorkDistance) => {
+        // Ensure addresses are synced to form
+        if (addressHomeRef?.value) {
+            form.addressHome = { ...addressHomeRef.value };
+        }
+        if (addressWorkRef?.value) {
+            form.addressWork = { ...addressWorkRef.value };
+        }
+        if (homeWorkDistance?.value) {
+            form.homeWorkDistance = homeWorkDistance.value;
+        }
+
         if (!isOnline) {
             offlineQueue.push(form.data());
             localStorage.setItem('offline_queue', JSON.stringify(offlineQueue));
@@ -31,6 +43,11 @@ export function useFormWatchers() {
             form.reset();
             if (typeof window !== 'undefined') localStorage.removeItem('form_cache');
             return;
+        }
+
+        const { fetchDistanceFromOSRM } = useDistanceCalculation();
+        if (form.addressHome && form.addressWork) {
+            form.homeWorkDistance = await fetchDistanceFromOSRM(form.addressHome, form.addressWork, isOnline);
         }
 
         form.post(route('expenseReport.store'), {

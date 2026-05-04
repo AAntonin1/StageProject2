@@ -24,7 +24,6 @@ class ExpenseReportController extends Controller
             ->where('month_year', date('m/Y'))
             ->first();
 
-
         return Inertia::render('ExpenseReports/Main', [
             'segments' => $segments,
             'user' => $user,
@@ -45,6 +44,7 @@ class ExpenseReportController extends Controller
             'job' => 'required|string',
             'vehicle' => 'required|string',
             'numberPlate' => 'required|string',
+            'homeWorkDistance' => 'required|numeric',
             'segments' => 'required|array',
             'segments.*.from_address.label' => 'required|string',
             'segments.*.to_address.label' => 'required|string',
@@ -60,10 +60,8 @@ class ExpenseReportController extends Controller
         $dateInput = $request->input('date');
         $monthYear = date('m/Y', strtotime($dateInput));
 
-        // Utilisation d'une transaction pour éviter les données partielles en cas de bug réseau
         DB::transaction(function () use ($request, $userId, $monthYear) {
 
-            // Extraction propre des labels d'adresses (car ce sont des objets en JS)
             $addressWorkData = $request->input('addressWork');
             $workLabel = is_array($addressWorkData) ? ($addressWorkData['label'] ?? 'Non renseigné') : $addressWorkData;
 
@@ -78,7 +76,7 @@ class ExpenseReportController extends Controller
                     'address_work' => $workLabel,
                     'job' => $request->input('job'),
                     'vehicle' => $request->input('vehicle'),
-                    'km_rate' => 0.4449, // Aligné avec votre JS
+                    'km_rate' => 0.4449,
                     'total_km' => 0,
                     'total_amount' => 0,
                     'number_plate' => $request->input('numberPlate'),
@@ -102,15 +100,16 @@ class ExpenseReportController extends Controller
                 ]);
             }
 
-            // Mise à jour des infos utilisateur (on encode les adresses si ce sont des objets)
+            // Update user info
             User::where('id', $userId)->update([
                 'first_name' => $request->input('firstName'),
                 'last_name' => $request->input('lastName'),
                 'address_home' => is_array($request->input('addressHome')) ? json_encode($request->input('addressHome')) : $request->input('addressHome'),
                 'address_work' => is_array($request->input('addressWork')) ? json_encode($request->input('addressWork')) : $request->input('addressWork'),
+                'home_work_distance' => $request->input('homeWorkDistance'),
             ]);
 
-            // Recalcul des totaux
+            // Calculate total km and amount
             $totalKm = Segment::where('expense_report_id', $expenseReport->id)->sum('distance_km');
             $expenseReport->update([
                 'total_km' => $totalKm,
@@ -118,7 +117,6 @@ class ExpenseReportController extends Controller
             ]);
         });
 
-        // Pour gérer à la fois Inertia (form.post) et Axios (sync offline)
         if ($request->wantsJson()) {
             return response()->json(['message' => 'Rapport enregistré avec succès !'], 201);
         }

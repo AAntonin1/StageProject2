@@ -1,6 +1,6 @@
 <script setup>
 import { Link, useForm } from '@inertiajs/vue3';
-import { ref, computed, onMounted, onUnmounted, defineAsyncComponent, provide } from 'vue';
+import { ref, computed, onMounted, onUnmounted, defineAsyncComponent, provide, watch } from 'vue';
 import { usePage } from '@inertiajs/vue3';
 
 // Composables
@@ -57,7 +57,7 @@ const form = useForm({
     firstName: '',
     lastName: '',
     addressHome: { lat: null, lon: null, label: '' },
-    homeWorkDistance: homeWorkDistance.value,
+    homeWorkDistance: 0,
     numAccount: '',
     placeBusiness: '',
     job: '',
@@ -233,8 +233,28 @@ const calcBtwToAddress = (index) => {
 
 // Form submission
 const submit = () => {
-    handleFormSubmit(form, isOnline.value, offlineQueue.value);
+    // Ensure form addresses are synced with injected refs before submission
+    form.addressHome = { ...addressHomeRef.value };
+    form.addressWork = { ...addressWorkRef.value };
+    handleFormSubmit(form, isOnline.value, offlineQueue.value, addressHomeRef, addressWorkRef, homeWorkDistance);
 };
+
+// Calculate home-work distance when addresses are available
+const calculateHomeWorkDistance = async () => {
+    // Synchronize form addresses with refs to ensure we use the latest values
+    form.addressHome = { ...addressHomeRef.value };
+    form.addressWork = { ...addressWorkRef.value };
+
+    if (addressHomeRef.value?.lat && addressHomeRef.value?.lon && addressWorkRef.value?.lat && addressWorkRef.value?.lon) {
+        const distance = await fetchDistanceFromOSRM(form.addressHome, form.addressWork, isOnline.value);
+        form.homeWorkDistance = distance;
+        console.log("Distance domicile-travail calculée :", form.homeWorkDistance);
+        homeWorkDistance.value = distance;
+    }
+};
+
+let unsubHomeRef = null;
+let unsubWorkRef = null;
 
 // Lifecycle
 onMounted(() => {
@@ -245,11 +265,25 @@ onMounted(() => {
     initFormFromProps(form, props.user, props.expense_report);
     setupFormWatchers(form, homeWorkDistance, updateDistances);
     setupAddressWatchers(form);
+
+    // Initialize form addresses from refs after they're loaded
+    form.addressHome = { ...addressHomeRef.value };
+    form.addressWork = { ...addressWorkRef.value };
+
+    // Calculate on mount after a short delay to ensure addresses are loaded
+    setTimeout(calculateHomeWorkDistance, 100);
+
+    // Recalculate whenever addresses change
+    unsubHomeRef = watch(addressHomeRef, calculateHomeWorkDistance, { deep: true });
+    unsubWorkRef = watch(addressWorkRef, calculateHomeWorkDistance, { deep: true });
 });
 
 onUnmounted(() => {
     cleanupOfflineHandling();
+    if (unsubHomeRef) unsubHomeRef();
+    if (unsubWorkRef) unsubWorkRef();
 });
+
 
 
 </script>
@@ -282,16 +316,12 @@ onUnmounted(() => {
                 <PersonalInformation
                     v-model:first_name="form.firstName"
                     v-model:last_name="form.lastName"
-                    v-model:address="addressHomeRef"
-                    v-model:place_business="addressWorkRef"
                     v-model:job="form.job"
                     v-model:vehicle="form.vehicle"
                     v-model:number_plate="form.numberPlate"
                     :user="props.user"
                     :expense_report="props.expense_report"
                 />
-
-                <HomeWorkDistance v-model:homeWorkDistance="form.homeWorkDistance"  />
 
                 <form @submit.prevent="submit" class="space-y-6">
                     <div v-for="(segment, index) in form.segments" :key="segment.id"
@@ -322,7 +352,8 @@ onUnmounted(() => {
                                         v-model:address="segment.from_address"
                                         placeholder="Lieu de départ"
                                         labelName="Lieu de départ"
-                                        class="flex-1"/>
+                                        class="flex-1"
+                                        required />
 
                                     <ButtonHomeAddress
                                         @add-address-button-to-segment="addAddressButtonToSegment(index, 'from_address', 'home')"/>
@@ -349,7 +380,9 @@ onUnmounted(() => {
                                         v-model:address="segment.to_address"
                                         placeholder="Lieu d'arrivée"
                                         labelName="Lieu d'arrivée"
-                                        class="flex-1"/>
+                                        class="flex-1"
+                                        required
+                                    />
 
                                     <ButtonHomeAddress
                                         @add-address-button-to-segment="addAddressButtonToSegment(index, 'to_address', 'home')"/>
@@ -367,7 +400,7 @@ onUnmounted(() => {
 
                             <label class="text-[10px] font-black uppercase text-slate-600 block mb-1 ml-1">Motif de déplacement</label>
                             <div class="pt-2 flex items-center gap-4">
-                                <ReasonDeplacement v-model:reason="segment.reason"/>
+                                <ReasonDeplacement v-model:reason="segment.reason" required/>
 
                                 <div class="ml-auto flex items-center gap-2">
                                     <label

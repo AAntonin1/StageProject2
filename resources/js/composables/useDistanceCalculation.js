@@ -1,7 +1,6 @@
 export function useDistanceCalculation() {
     const fetchDistanceFromOSRM = async (start, end, isOnline) => {
         if (!isOnline) return 0;
-
         const coords = `${start.lon},${start.lat};${end.lon},${end.lat}`;
         try {
             const response = await fetch(`https://router.project-osrm.org/route/v1/driving/${coords}?overview=false`);
@@ -33,6 +32,7 @@ export function useDistanceCalculation() {
 
         return parseFloat(calculatedSum.toFixed(2));
     };
+
 
     return {
         fetchDistanceFromOSRM,

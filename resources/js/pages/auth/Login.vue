@@ -24,7 +24,7 @@ const openRegister = () => {
 
 // Formulaire Inertia
 const form = useForm({
-    email: '',
+    user_name: '',
     password: '',
     remember: false
 });
@@ -42,7 +42,7 @@ const submit = () => {
 <template>
     <AuthBase
         title="Connexion à votre compte"
-        description="Entrez votre email et mot de passe ci-dessous pour vous connecter"
+        description="Entrez votre nom d'utilisateur et mot de passe ci-dessous pour vous connecter"
     >
         <Head title="Log in" />
 
@@ -54,18 +54,18 @@ const submit = () => {
             <div class="grid gap-6">
                 <!-- Email -->
                 <div class="grid gap-2">
-                    <Label for="email">Adresse email</Label>
+                    <Label for="user_name">Nom d'utilisateur</Label>
                     <Input
-                        id="email"
-                        type="email"
-                        v-model="form.email"
+                        id="user_name"
+                        type="text"
+                        v-model="form.user_name"
                         required
                         autofocus
                         :tabindex="1"
-                        autocomplete="email"
-                        placeholder="email@example.com"
+                        autocomplete="username"
+                        placeholder="username"
                     />
-                    <InputError :message="form.errors.email" />
+                    <InputError :message="form.errors.user_name" />
                 </div>
 
                 <!-- Password -->

@@ -20,6 +20,7 @@ const form = useForm({
     first_name: props.user?.first_name || '',
     last_name: props.user?.last_name || '',
     email: props.user?.email || '',
+    user_name: props.user?.user_name || '',
     password: '',
     role: props.user?.roles?.[0]?.name || 'user',
 });
@@ -87,6 +88,11 @@ const getInitials = (u) => {
                         <label class="text-[10px] font-black uppercase text-slate-600 ml-1">Prénom</label>
                         <input v-model="form.first_name" type="text" class="w-full p-3 bg-slate-100 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500" placeholder="Jean">
                         <span v-if="form.errors.first_name" class="text-red-500 text-xs">{{ form.errors.first_name }}</span>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-black uppercase text-slate-600 ml-1">Nom d'utilisateur</label>
+                        <input v-model="form.user_name" type="text" class="w-full p-3 bg-slate-100 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500" placeholder="jean_dupont">
+                        <span v-if="form.errors.user_name" class="text-red-500 text-xs">{{ form.errors.user_name }}</span>
                     </div>
                     <div class="space-y-1">
                         <label class="text-[10px] font-black uppercase text-slate-600 ml-1">Nom</label>
